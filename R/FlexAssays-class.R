@@ -286,13 +286,13 @@ setValidity2("FlexAssays", function(x) validFlexAssays(x, immediate. = FALSE))
 validFlexAssays <- function(x, immediate. = TRUE) {
   err <- c(validLogMap(x@rowMap, immediate.), validLogMap(x@colMap, immediate.))
 
-  assays <- try(getAssays(x, withDimnames = FALSE), silent = TRUE)
+  assays <- try(assays(x, withDimnames = FALSE), silent = TRUE)
   if (inherits(assays, "try-error")) {
-    e <- "'getAssays(x)' must work for a FlexAssays."
+    e <- "'assays(x)' must work for a FlexAssays."
     return(getErrors(e, err, immediate.))
   }
   if (!is(assays, "SimpleList")) {
-    e <- "'getAssays(x)' must return a SimpleList object."
+    e <- "'assays(x)' must return a SimpleList object."
     return(getErrors(e, err, immediate.))
   }
   if (length(assays) == 0L) {
@@ -582,7 +582,7 @@ setAs("SimpleList", "FlexAssays", function(from) {
 })
 
 setAs("FlexAssays", "SimpleList", function(from) {
-  getAssays(from, withDimnames = TRUE)
+  assays(from, withDimnames = TRUE)
 })
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

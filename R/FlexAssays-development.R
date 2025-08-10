@@ -3,6 +3,7 @@
 #' @importFrom methods setGeneric setMethod validObject
 #' @importFrom BiocGenerics updateObject
 #' @importFrom S4Vectors isTRUEorFALSE
+#' @importFrom SummarizedExperiment assays assay
 #' @importClassesFrom S4Vectors list_OR_List
 NULL
 
@@ -31,7 +32,7 @@ NULL
 #' @name FlexAssays-updateObject
 setMethod("updateObject", "FlexAssays", function(object, ..., verbose = FALSE) {
   assays <- updateObject(
-    getAssays(object, withDimnames = FALSE),
+    assays(object, withDimnames = FALSE),
     verbose = verbose
   )
   object@rowMap <- updateObject(object@rowMap, ..., verbose = verbose)
@@ -156,7 +157,7 @@ setMethod("assayClasses", "FlexAssays", function(x) x@assayClasses)
 #' @details
 #' These low-level methods are designed for internal manipulation of the assay
 #' storage slot. Any subclass of \code{\link{FlexAssays}} that implements S4
-#' methods for `getAssays` and `setRawAssays` should work well with the common
+#' methods for `assays` and `setRawAssays` should work well with the common
 #' methods in \code{\link{FlexAssays-methods}}
 #'
 #' @name FlexAssays-assays
@@ -168,26 +169,18 @@ NULL
 #'
 #' @returns
 #' \itemize{
-#' \item `getAssays()`: Returns a list of matrix-like assays, optionally with
+#' \item `assays()`: Returns a list of matrix-like assays, optionally with
 #' restored dimension names.
 #' }
 #'
-#' @rdname FlexAssays-assays
-#' @export
-setGeneric("getAssays", function(x, withDimnames = TRUE, ...) {
-  standardGeneric("getAssays")
-})
-
 #' @examples
-#' ## getAssays
+#' ## assays
 #' fa <- exampleFlexAssays()
-#' getAssays(fa)
+#' assays(fa)
 #'
 #' @rdname FlexAssays-assays
 #' @export
-setMethod(
-  "getAssays", "SimpleFlexAssays",
-  function(x, withDimnames = TRUE, ...) {
+setMethod("assays", "SimpleFlexAssays", function(x, withDimnames = TRUE, ...) {
     assays <- x@data
     if (!withDimnames) {
       return(assays)
@@ -199,7 +192,7 @@ setMethod(
         colnames = mappedRowNames(x@colMap, i)
       )
     }
-    return(assays)
+    assays
   }
 )
 
@@ -207,19 +200,50 @@ setMethod(
 #'
 #' @returns
 #' \itemize{
-#' \item `getOneAssay()`: Returns the matrix-like assay object at the `i`-th
+#' \item `assay`: Returns the matrix-like assay object at the `i`-th
 #' element.
 #' }
 #'
 #' @examples
-#' ## getOneAssay
+#' ## assay
 #' fa <- exampleFlexAssays()
-#' getOneAssay(fa, 2)
+#' assay(fa, 2)
 #'
 #' @rdname FlexAssays-assays
 #' @export
-getOneAssay <- function(x, i, withDimnames = TRUE, ...) {
-  assay <- getAssays(x, withDimnames = FALSE)[[i]]
+setMethod(
+  "assay", c("FlexAssays", "missing"),
+  function(x, i, withDimnames = TRUE, ...) {
+    if (0L == length(x)) {
+      stop(sprintf(
+        "assay(<%s>, i=\"missing\") failed:\n  No assay exists. ",
+        class(x)[1]
+      ))
+    }
+    .get_one_assay(x, i = 1L, withDimnames = withDimnames, ...)
+  }
+)
+
+#' @rdname FlexAssays-assays
+#' @export
+setMethod(
+  "assay", c("FlexAssays", "character"),
+  function(x, i, withDimnames = TRUE, ...) {
+    .get_one_assay(x, i = i, withDimnames = withDimnames, ...)
+  }
+)
+
+#' @rdname FlexAssays-assays
+#' @export
+setMethod(
+  "assay", c("FlexAssays", "numeric"),
+  function(x, i, withDimnames = TRUE, ...) {
+    .get_one_assay(x, i = i, withDimnames = withDimnames, ...)
+  }
+)
+
+.get_one_assay <- function(x, i, withDimnames = TRUE, ...) {
+  assay <- assays(x, withDimnames = FALSE)[[i]]
   if (!withDimnames) {
     return(assay)
   }
@@ -241,18 +265,13 @@ getOneAssay <- function(x, i, withDimnames = TRUE, ...) {
 #' @rdname FlexAssays-assays
 #' @export setRawAssays
 setGeneric("setRawAssays", function(x, new.assays, ..., check = TRUE) {
-  stopifnot(isTRUEorFALSE(check))
-  out <- standardGeneric("setRawAssays")
-  if (check) {
-    validObject(out)
-  }
-  out
+  standardGeneric("setRawAssays")
 })
 
 #' @examples
 #' ## setRawAssays
 #' fa <- exampleFlexAssays()
-#' assays <- getAssays(fa)
+#' assays <- assays(fa)
 #' fa <- setRawAssays(fa, assays)
 #'
 #' @rdname FlexAssays-assays
@@ -260,34 +279,69 @@ setGeneric("setRawAssays", function(x, new.assays, ..., check = TRUE) {
 setMethod(
   "setRawAssays", c("SimpleFlexAssays", "list_OR_List"),
   function(x, new.assays, ..., check = TRUE) {
+    stopifnot(isTRUEorFALSE(check))
     for (i in seq_along(new.assays)) {
       new.assays[[i]] <- resetDimNames(new.assays[[i]])
     }
     x@data <- as(new.assays, "SimpleList")
+    if (check) {
+      validObject(x)
+    }
     x
   }
 )
 
-#' @param new.assay A single matrix-like object to set as the `i`-th assay. Must
+#' @param value A single matrix-like object to set as the `i`-th assay. Must
 #' contain both row and column names. If `NULL`, the original assay at index `i`
 #' will be removed.
 #'
 #' @returns
 #' \itemize{
-#' \item `setOneAssay()`: Returns an updated \code{\link{FlexAssays}} with the
+#' \item `assay<-`: Returns an updated \code{\link{FlexAssays}} with the
 #' `i`-th assay replaced by `new.assay`.
 #' }
 #'
 #' @examples
-#' ## setOneAssay
+#' ## assay<-
 #' fa <- exampleFlexAssays()
-#' assay <- getOneAssay(fa, 1)
-#' fa <- setOneAssay(fa, 4, assay)
+#' a <- assay(fa, 1)
+#' assay(fa, 4) <- a
 #'
 #' @rdname FlexAssays-assays
 #' @export
-setOneAssay <- function(x, i, new.assay) {
-  assays <- getAssays(x, withDimnames = FALSE)
+setMethod(
+  "assay<-", c("FlexAssays", "missing"),
+  function(x, i, withDimnames = TRUE, ..., value) {
+    if (0L == length(x)) {
+      stop(sprintf(
+        "`assay<-`(<%s>, i=\"missing\") failed:\n  length(assays(<%s>)) is 0. ",
+        class(x)[1], class(x)[1]
+      ))
+    }
+    .set_one_assay(x, i = 1L, new.assay = value)
+  }
+)
+
+#' @rdname FlexAssays-assays
+#' @export
+setMethod(
+  "assay<-", c("FlexAssays", "numeric"),
+  function(x, i, withDimnames = TRUE, ..., value) {
+    .set_one_assay(x, i = i, new.assay = value)
+  }
+)
+
+#' @rdname FlexAssays-assays
+#' @export
+setMethod(
+  "assay<-", c("FlexAssays", "character"),
+  function(x, i, withDimnames = TRUE, ..., value) {
+    .set_one_assay(x, i = i, new.assay = value)
+  }
+)
+
+.set_one_assay <- function(x, i, new.assay) {
+  assays <- assays(x, withDimnames = FALSE)
   if (is.null(new.assay)) {
     x@rowMap <- removeMapCols(x@rowMap, i)
     x@colMap <- removeMapCols(x@colMap, i)

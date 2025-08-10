@@ -30,7 +30,7 @@ NULL
 setMethod(
   f = "[[",
   signature = c("FlexAssays", "ANY", "missing"),
-  definition = function(x, i, j, ...) getOneAssay(x, i)
+  definition = function(x, i, j, ...) assay(x, i)
 )
 
 #' @param value `r .val_param` Typically a matrix-like object to be set. If is
@@ -53,7 +53,10 @@ setMethod(
 setMethod(
   f = "[[<-",
   signature = c("FlexAssays", "ANY", "missing"),
-  definition = function(x, i, j, ..., value) setOneAssay(x, i, value)
+  definition = function(x, i, j, ..., value) {
+    assay(x, i = i) <- value
+    x
+  }
 )
 
 #' @param pattern A regular expression used in `.DollarNames` to filter names.
@@ -71,7 +74,7 @@ setMethod(
 #' @export
 #' @rdname FlexAssays-subset
 .DollarNames.FlexAssays <- function(x, pattern = "") {
-  grep(pattern, names(getAssays(x, withDimnames = FALSE)), value = TRUE)
+  grep(pattern, names(assays(x, withDimnames = FALSE)), value = TRUE)
 }
 
 #' @param name The name of the assay to get or set using the `$` accessor.
@@ -84,7 +87,7 @@ setMethod(
 #' @rdname FlexAssays-subset
 #' @export
 #' @method $ FlexAssays
-"$.FlexAssays" <- function(x, name) getOneAssay(x, name)
+"$.FlexAssays" <- function(x, name) assay(x, name)
 
 #' @returns
 #' \itemize{
@@ -95,7 +98,10 @@ setMethod(
 #' @rdname FlexAssays-subset
 #' @export
 #' @method $<- FlexAssays
-"$<-.FlexAssays" <- function(x, name, value) setOneAssay(x, name, value)
+"$<-.FlexAssays" <- function(x, name, value) {
+  assay(x, i = name) <- value
+  x
+}
 
 #' @param drop Logical, whether or not to drop those empty layers after
 #' subsetting.
@@ -128,7 +134,7 @@ setMethod("[", "FlexAssays", function(x, i, j, ..., drop = TRUE) {
     return(setRawAssays(x, List()))
   }
   keep <- logical(length(x))
-  assays <- getAssays(x)
+  assays <- assays(x)
   for (i in seq_along(assays)) {
     assays[[i]] <- resetDimNames(subsetMatByDimNames(
       assays[[i]],

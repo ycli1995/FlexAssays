@@ -67,7 +67,7 @@ showFlexAssays <- function(object) {
   if (length(assay.names) == 0) {
     assay.names <- as.character(seq_along(object))
   }
-  assays <- getAssays(object, withDimnames = FALSE)
+  assays <- assays(object, withDimnames = FALSE)
   for (i in seq_along(assays)) {
     cat(sprintf(
       "  %s: %i x %i %s\n",
@@ -99,7 +99,7 @@ setMethod("show", "FlexAssays", showFlexAssays)
 #' @export
 #' @rdname FlexAssays-methods
 setMethod("length", "FlexAssays", function(x) {
-  length(getAssays(x, withDimnames = FALSE))
+  length(assays(x, withDimnames = FALSE))
 })
 
 #' @returns
@@ -113,7 +113,7 @@ setMethod("length", "FlexAssays", function(x) {
 #' @export
 #' @rdname FlexAssays-methods
 setMethod("names", "FlexAssays", function(x) {
-  names(getAssays(x, withDimnames = FALSE))
+  names(assays(x, withDimnames = FALSE))
 })
 
 #' @returns
@@ -125,7 +125,7 @@ setMethod("names", "FlexAssays", function(x) {
 #' @rdname FlexAssays-methods
 setMethod("names<-", "FlexAssays", function(x, value) {
   colnames(x@rowMap) <- colnames(x@colMap) <- value
-  assays <- getAssays(x, withDimnames = FALSE)
+  assays <- assays(x, withDimnames = FALSE)
   names(assays) <- value
   setRawAssays(x, assays)
 })
@@ -202,4 +202,4 @@ setMethod("colnames<-", "FlexAssays", function(x, value) {
 #' @rdname FlexAssays-methods
 #' @export
 #' @method as.list FlexAssays
-as.list.FlexAssays <- function(x, ...) as.list(getAssays(x, ...))
+as.list.FlexAssays <- function(x, ...) as.list(assays(x, ...))

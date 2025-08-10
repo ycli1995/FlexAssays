@@ -17,17 +17,17 @@ test_add_mat <- function(mats, mat, i) {
   expect_in(rownames(mat), rownames(mats))
   expect_in(colnames(mat), colnames(mats))
 
-  mat.list <- getAssays(mats)
+  mat.list <- assays(mats)
   expect_equal(mats[[i]], mat.list[[i]])
 
   for (i in seq_along(mat.list)) {
-    expect_equal(mat.list[[i]], getOneAssay(mats, i))
+    expect_equal(mat.list[[i]], assay(mats, i))
   }
 
-  mat.list <- getAssays(mats, withDimnames = FALSE)
+  mat.list <- assays(mats, withDimnames = FALSE)
   for (i in seq_along(mat.list)) {
-    expect_equal(mat.list[[i]], unname(getOneAssay(mats, i)))
-    expect_equal(mat.list[[i]], getOneAssay(mats, i, withDimnames = FALSE))
+    expect_equal(mat.list[[i]], unname(assay(mats, i)))
+    expect_equal(mat.list[[i]], assay(mats, i, withDimnames = FALSE))
   }
 
   mats
@@ -143,7 +143,7 @@ test_that("FlexAssays .DollarNames", {
 
   ## .DollarNames should get all column names of colData(x)
   dollar.names <- .DollarNames(mats)
-  expect_identical(dollar.names, names(getAssays(mats, withDimnames = FALSE)))
+  expect_identical(dollar.names, names(assays(mats, withDimnames = FALSE)))
 
   ## Use `$` to get or set one assay
   expect_identical(mats$mat1, mats[[1]])
@@ -154,7 +154,7 @@ test_that("FlexAssays .DollarNames", {
   expect_identical(mats$mat2, mat2[rn, cn, drop = FALSE])
 })
 
-test_that("'getAssays' for FlexAssays", {
+test_that("'assays' for FlexAssays", {
   mat1 <- generate_sparse_matrix(8, 6)
   mat2 <- generate_sparse_matrix(8, 6)
   mat3 <- generate_sparse_matrix(8, 6)
@@ -162,32 +162,32 @@ test_that("'getAssays' for FlexAssays", {
   mat.list <- list(mat1, mat2, mat3)
   mats <- FlexAssays(mat.list)
 
-  expect_s4_class(getAssays(mats), "SimpleList")
-  expect_length(getAssays(mats), length(mats))
-  expect_named(getAssays(mats), names(mats))
+  expect_s4_class(assays(mats), "SimpleList")
+  expect_length(assays(mats), length(mats))
+  expect_named(assays(mats), names(mats))
 
   for (i in seq_along(mat.list)) {
     rn <- mappedRowNames(rowMap(mats), i)
     cn <- mappedRowNames(colMap(mats), i)
-    expect_equal(getAssays(mats)[[i]], mat.list[[i]][rn, cn, drop = FALSE])
+    expect_equal(assays(mats)[[i]], mat.list[[i]][rn, cn, drop = FALSE])
   }
 
   for (i in seq_along(mat.list)) {
     rn <- mappedRowNames(rowMap(mats), i)
     cn <- mappedRowNames(colMap(mats), i)
     expect_equal(
-      getAssays(mats, withDimnames = FALSE)[[i]],
+      assays(mats, withDimnames = FALSE)[[i]],
       unname(mat.list[[i]][rn, cn, drop = FALSE])
     )
   }
 
   for (i in seq_along(mats)) {
-    expect_equal(getAssays(mats)[[i]], getOneAssay(mats, i))
+    expect_equal(assays(mats)[[i]], assay(mats, i))
     expect_equal(
-      getAssays(mats, withDimnames = FALSE)[[i]],
-      getOneAssay(mats, i, withDimnames = FALSE)
+      assays(mats, withDimnames = FALSE)[[i]],
+      assay(mats, i, withDimnames = FALSE)
     )
-    expect_equal(getOneAssay(mats, i), mats[[i]])
+    expect_equal(assay(mats, i), mats[[i]])
   }
 })
 
@@ -641,7 +641,7 @@ test_that("FlexAssays 'names'", {
   new_names <- paste0("AAA_", seq_along(mats))
   names(mats2) <- new_names
   expect_equal_no_attr(names(mats2), new_names)
-  expect_equal_no_attr(names(getAssays(mats2)), new_names)
+  expect_equal_no_attr(names(assays(mats2)), new_names)
   expect_equal_no_attr(colnames(mats2@rowMap), new_names)
   expect_equal_no_attr(colnames(mats2@colMap), new_names)
 
@@ -649,7 +649,7 @@ test_that("FlexAssays 'names'", {
   mats2 <- mats
   names(mats2) <- NULL
   expect_null(names(mats2))
-  expect_null(names(getAssays(mats2)))
+  expect_null(names(assays(mats2)))
 })
 
 test_that("FlexAssays 'colnames'", {

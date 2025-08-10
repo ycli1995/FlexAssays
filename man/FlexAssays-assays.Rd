@@ -2,25 +2,34 @@
 % Please edit documentation in R/FlexAssays-development.R
 \name{FlexAssays-assays}
 \alias{FlexAssays-assays}
-\alias{getAssays}
-\alias{getAssays,SimpleFlexAssays-method}
-\alias{getOneAssay}
+\alias{assays,SimpleFlexAssays-method}
+\alias{assay,FlexAssays,missing-method}
+\alias{assay,FlexAssays,character-method}
+\alias{assay,FlexAssays,numeric-method}
 \alias{setRawAssays}
 \alias{setRawAssays,SimpleFlexAssays,list_OR_List-method}
-\alias{setOneAssay}
+\alias{assay<-,FlexAssays,missing-method}
+\alias{assay<-,FlexAssays,numeric-method}
+\alias{assay<-,FlexAssays,character-method}
 \title{Get or set assays without dimension names}
 \usage{
-getAssays(x, withDimnames = TRUE, ...)
+\S4method{assays}{SimpleFlexAssays}(x, withDimnames = TRUE, ...)
 
-\S4method{getAssays}{SimpleFlexAssays}(x, withDimnames = TRUE, ...)
+\S4method{assay}{FlexAssays,missing}(x, i, withDimnames = TRUE, ...)
 
-getOneAssay(x, i, withDimnames = TRUE, ...)
+\S4method{assay}{FlexAssays,character}(x, i, withDimnames = TRUE, ...)
+
+\S4method{assay}{FlexAssays,numeric}(x, i, withDimnames = TRUE, ...)
 
 setRawAssays(x, new.assays, ..., check = TRUE)
 
 \S4method{setRawAssays}{SimpleFlexAssays,list_OR_List}(x, new.assays, ..., check = TRUE)
 
-setOneAssay(x, i, new.assay)
+\S4method{assay}{FlexAssays,missing}(x, i, withDimnames = TRUE, ...) <- value
+
+\S4method{assay}{FlexAssays,numeric}(x, i, withDimnames = TRUE, ...) <- value
+
+\S4method{assay}{FlexAssays,character}(x, i, withDimnames = TRUE, ...) <- value
 }
 \arguments{
 \item{x}{A \code{\link{FlexAssays}} object.}
@@ -39,18 +48,18 @@ ones in \code{x}.}
 validate the object after replacement. Setting it to \code{FALSE} will skip checks
 for \code{rowFlex}, \code{colFlex} and \code{assayClasses}.}
 
-\item{new.assay}{A single matrix-like object to set as the \code{i}-th assay. Must
+\item{value}{A single matrix-like object to set as the \code{i}-th assay. Must
 contain both row and column names. If \code{NULL}, the original assay at index \code{i}
 will be removed.}
 }
 \value{
 \itemize{
-\item \code{getAssays()}: Returns a list of matrix-like assays, optionally with
+\item \code{assays()}: Returns a list of matrix-like assays, optionally with
 restored dimension names.
 }
 
 \itemize{
-\item \code{getOneAssay()}: Returns the matrix-like assay object at the \code{i}-th
+\item \code{assay}: Returns the matrix-like assay object at the \code{i}-th
 element.
 }
 
@@ -60,7 +69,7 @@ with \code{new.assays} set into the corresponding slot.
 }
 
 \itemize{
-\item \code{setOneAssay()}: Returns an updated \code{\link{FlexAssays}} with the
+\item \verb{assay<-}: Returns an updated \code{\link{FlexAssays}} with the
 \code{i}-th assay replaced by \code{new.assay}.
 }
 }
@@ -72,27 +81,27 @@ development; end-users should not call these methods directly.
 \details{
 These low-level methods are designed for internal manipulation of the assay
 storage slot. Any subclass of \code{\link{FlexAssays}} that implements S4
-methods for \code{getAssays} and \code{setRawAssays} should work well with the common
+methods for \code{assays} and \code{setRawAssays} should work well with the common
 methods in \code{\link{FlexAssays-methods}}
 }
 \examples{
-## getAssays
+## assays
 fa <- exampleFlexAssays()
-getAssays(fa)
+assays(fa)
 
-## getOneAssay
+## assay
 fa <- exampleFlexAssays()
-getOneAssay(fa, 2)
+assay(fa, 2)
 
 ## setRawAssays
 fa <- exampleFlexAssays()
-assays <- getAssays(fa)
+assays <- assays(fa)
 fa <- setRawAssays(fa, assays)
 
-## setOneAssay
+## assay<-
 fa <- exampleFlexAssays()
-assay <- getOneAssay(fa, 1)
-fa <- setOneAssay(fa, 4, assay)
+a <- assay(fa, 1)
+assay(fa, 4) <- a
 
 }
 \keyword{internal}
