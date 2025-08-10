@@ -218,25 +218,25 @@ before manipulating the internal assays.
 ## Fetching assays
 
 We can retrieve the list of assays from a `FlexAssays` object using 
-`getAssays()`. This function should always return a `SimpleList` containing all 
+`assays()`. This function should always return a `SimpleList` containing all 
 assays. By default, the returned assays will include dimension names mapped 
 from the global row and column spaces.
 
-```{r getAssays}
-getAssays(fa1)
+```{r assays}
+assays(fa1)
 ```
 
 To access an individual assay, index into the list:
 
-```{r getAssays-subset1}
-getAssays(fa1)[[1]]
+```{r assays-subset1}
+assays(fa1)[[1]]
 ```
 
-```{r getAssays-subset2}
-getAssays(fa1)[[2]]
+```{r assays-subset2}
+assays(fa1)[[2]]
 ```
 
-**Note**: The dimensional orders of the fetched `getAssays(fa1)[[2]]` may 
+**Note**: The dimensional orders of the fetched `assays(fa1)[[2]]` may 
 differ from the original matrix `m2`, but all corresponding entries remain 
 correct. Internally, all assays are reordered to match the global dimension 
 names defined in `rowMap` and `colMap`.
@@ -250,15 +250,15 @@ and column names. Since the dimension names are already managed by `rowMap` and
 `colMap`, they are restored on demand. We can suppress this behavior by setting 
 `withDimnames = FALSE`:
 
-```{r getAssays-without-dimnames}
-getAssays(fa1, withDimnames = FALSE)[[2]]
+```{r assays-without-dimnames}
+assays(fa1, withDimnames = FALSE)[[2]]
 ```
 
 To fetch a single assay directly, we may also use the wrapper function 
-`getOneAssay()`, which applies only the dimension name restoration:
+`assay()`, which applies only the dimension name restoration:
 
-```{r getOneAssay}
-getOneAssay(fa1, 2)
+```{r assay}
+assay(fa1, 2)
 ```
 
 In addition, `FlexAssays` supports list-like extraction via `[[` and `$`, just 

@@ -3,7 +3,7 @@
 #' @importFrom methods setGeneric setMethod validObject
 #' @importFrom BiocGenerics updateObject
 #' @importFrom S4Vectors isTRUEorFALSE
-#' @importFrom SummarizedExperiment assays assay
+#' @importFrom SummarizedExperiment assay assay<- assays
 #' @importClassesFrom S4Vectors list_OR_List
 NULL
 
