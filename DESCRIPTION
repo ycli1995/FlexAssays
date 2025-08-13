@@ -30,7 +30,6 @@ Collate:
     'FlexAssays-subset.R'
     'roxygen2-doc.R'
 Depends: 
-    R (>= 4.4.0),
     BiocGenerics,
     Matrix,
     methods,

@@ -38,8 +38,7 @@ NULL
 
 #' @returns
 #' \itemize{
-#' \item `showFlexAssays` and `show`: Print the basic information of `object`
-#' to the console.
+#' \item `show`: Print the basic information of `object` to the console.
 #' }
 #'
 #' @note
@@ -50,13 +49,10 @@ NULL
 #'
 #' @export
 #' @rdname FlexAssays-methods
-showFlexAssays <- function(object) {
+setMethod("show", "FlexAssays", function(object) {
   showS4Title(object, sprintf("%ix%i", nrow(object), ncol(object)))
   cat(.show_flex(object))
-  cat(sprintf(
-    "assayClasses: %s\n",
-    paste(object@assayClasses, collapse = ", ")
-  ))
+  cat("assayClasses: ", paste(object@assayClasses, collapse = ", "), "\n")
   coolcat("rownames (%d): %s\n", rownames(object))
   coolcat("colnames (%d): %s\n", colnames(object))
   cat(sprintf("assays (%i):\n", length(object)))
@@ -78,15 +74,11 @@ showFlexAssays <- function(object) {
     ))
   }
   invisible(NULL)
-}
+})
 
 .show_flex <- function(x) {
   sprintf("rowFlex: '%s' colFlex: '%s'\n", x@rowFlex, x@colFlex)
 }
-
-#' @export
-#' @rdname FlexAssays-methods
-setMethod("show", "FlexAssays", showFlexAssays)
 
 #' @returns
 #' \itemize{

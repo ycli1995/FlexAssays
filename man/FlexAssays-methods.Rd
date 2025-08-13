@@ -2,7 +2,6 @@
 % Please edit documentation in R/FlexAssays-methods.R
 \name{FlexAssays-methods}
 \alias{FlexAssays-methods}
-\alias{showFlexAssays}
 \alias{show,FlexAssays-method}
 \alias{length,FlexAssays-method}
 \alias{names,FlexAssays-method}
@@ -15,8 +14,6 @@
 \alias{as.list.FlexAssays}
 \title{Methods for FlexAssays}
 \usage{
-showFlexAssays(object)
-
 \S4method{show}{FlexAssays}(object)
 
 \S4method{length}{FlexAssays}(x)
@@ -47,8 +44,7 @@ dimension names.}
 }
 \value{
 \itemize{
-\item \code{showFlexAssays} and \code{show}: Print the basic information of \code{object}
-to the console.
+\item \code{show}: Print the basic information of \code{object} to the console.
 }
 
 \itemize{
