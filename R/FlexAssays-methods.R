@@ -119,7 +119,7 @@ setMethod("names<-", "FlexAssays", function(x, value) {
   colnames(x@rowMap) <- colnames(x@colMap) <- value
   assays <- assays(x, withDimnames = FALSE)
   names(assays) <- value
-  setRawAssays(x, assays)
+  setRawAssays(x, assays, check = FALSE)
 })
 
 #' @returns

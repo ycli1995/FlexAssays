@@ -29,9 +29,28 @@ test_add_mat <- function(mats, mat, i) {
     expect_equal(mat.list[[i]], unname(assay(mats, i)))
     expect_equal(mat.list[[i]], assay(mats, i, withDimnames = FALSE))
   }
-
   mats
 }
+
+test_empty_fa <- function(input = list()) {
+  mats <- FlexAssays(input)
+
+  mat1 <- generate_sparse_matrix(8, 6)
+  mats[[1]] <- mat1
+  expect_equal(rownames(mats), rownames(mat1))
+  expect_equal(colnames(mats), colnames(mat1))
+  expect_equal(dimnames(mats), dimnames(mat1))
+  expect_named(mats, NULL)
+  expect_length(mats, 1)
+  invisible(NULL)
+}
+
+test_that("Create a FlexAssays with empty list", {
+  test_empty_fa(list())
+  test_empty_fa(List())
+  test_empty_fa(NULL)
+  test_empty_fa(SimpleList())
+})
 
 test_that("Create a FlexAssays with only one matrix", {
   mat1 <- generate_sparse_matrix(8, 6)
@@ -50,16 +69,19 @@ test_that("Create a FlexAssays with 'rownames' and 'colnames'", {
   ## Cannot use 'rownames' and 'colnames' when use 'assays'
   expect_error(mats <- FlexAssays(mat1, rownames(mat1), colnames(mat1)))
 
+  ## Create an empty FlexAssays
   mats <- FlexAssays(rownames = rownames(mat1), colnames = colnames(mat1))
   expect_equal(rownames(mats), rownames(mat1))
   expect_equal(colnames(mats), colnames(mat1))
   expect_equal(dimnames(mats), dimnames(mat1))
   expect_length(mats, 0)
 
+  ## Add `mat1`
   mats <- test_add_mat(mats, mat1, "mat1")
   expect_length(mats, 1)
   expect_named(mats, "mat1")
 
+  ## Add subset of `mat1`
   mat1 <- mat1[sample(rownames(mat1), 6), sample(colnames(mat1), 4)]
   mats <- test_add_mat(mats, mat1, 1)
 })
@@ -89,51 +111,58 @@ test_that("Create a FlexAssays with a list of matrices", {
 test_that("Create a FlexAssays with a list, and rowFlex = 'fixed'", {
   mat1 <- generate_sparse_matrix(8, 6)
   mat2 <- generate_sparse_matrix(8, 6)
-  rownames(mat2) <- c(
-    rownames(mat1)[1:4],
-    setdiff(LETTERS, rownames(mat1))
-  )[1:nrow(mat2)]
+  rownames(mat1) <- rownames(mat2) <- LETTERS[1:8]
 
+  # Wrong row names (error)
+  rownames(mat2)[1:4] <- setdiff(LETTERS, rownames(mat1))[1:4]
   mat.list <- list(mat1, mat2)
   expect_error(mats <- FlexAssays(mat.list, rowFlex = "fixed"))
 
+  # Missed rows (error)
   rownames(mat2) <- sample(rownames(mat1))
+  mat.list <- list(mat1, mat2[1:4, ])
+  expect_error(mats <- FlexAssays(mat.list, rowFlex = "fixed"))
+
+
   mat.list <- list(mat1, mat2)
   mats <- FlexAssays(mat.list, rowFlex = "fixed")
   expect_equal(rownames(mats), rownames(mat1))
+  expect_equal(mat2[rownames(mats), colnames(mats[[2]])], mats[[2]])
 })
 
 test_that("Create a FlexAssays with a list, and colFlex = 'fixed'", {
   mat1 <- generate_sparse_matrix(8, 6)
   mat2 <- generate_sparse_matrix(8, 6)
-  colnames(mat2) <- c(
-    colnames(mat1)[1:4],
-    setdiff(letters, rownames(mat1))
-  )[1:ncol(mat2)]
 
+  # Wrong column names (error)
+  bad.names <- setdiff(letters, colnames(mat1))
+  colnames(mat2) <- c(colnames(mat1)[1:4], bad.names[1:2])
   mat.list <- list(mat1, mat2)
   expect_error(mats <- FlexAssays(mat.list, colFlex = "fixed"))
 
+  # Missed columns (error)
   colnames(mat2) <- sample(colnames(mat1))
+  mat.list <- list(mat1, mat2[, 1:4])
+  expect_error(mats <- FlexAssays(mat.list, colFlex = "fixed"))
+
   mat.list <- list(mat1, mat2)
   mats <- FlexAssays(mat.list, colFlex = "fixed")
   expect_equal(colnames(mats), colnames(mat1))
+  expect_equal(mat2[rownames(mats[[2]]), colnames(mats)], mats[[2]])
 })
 
-test_that("Creating a FlexAssays with duplicated dimnames should fail.", {
+test_that("Create a FlexAssays with duplicated dimnames should fail.", {
   mat1 <- generate_sparse_matrix(8, 6)
   mat2 <- generate_sparse_matrix(8, 6)
   colnames(mat1)[2] <- colnames(mat1)[1]
   expect_error(FlexAssays(list(mat1, mat2)))
 
   mat1 <- generate_sparse_matrix(8, 6)
-  mat2 <- generate_sparse_matrix(8, 6)
-  rownames(mat2)[2] <- rownames(mat2)[1]
+  rownames(mat1)[2] <- rownames(mat1)[1]
   expect_error(FlexAssays(list(mat1, mat2)))
 })
 
 test_that("FlexAssays .DollarNames", {
-
   mat1 <- generate_sparse_matrix(8, 6)
   mat2 <- generate_sparse_matrix(8, 6)
   mat3 <- generate_sparse_matrix(8, 6)
@@ -162,16 +191,19 @@ test_that("'assays' for FlexAssays", {
   mat.list <- list(mat1, mat2, mat3)
   mats <- FlexAssays(mat.list)
 
+  ## Size, names and S4 class
   expect_s4_class(assays(mats), "SimpleList")
   expect_length(assays(mats), length(mats))
   expect_named(assays(mats), names(mats))
 
+  ## Values are correct
   for (i in seq_along(mat.list)) {
     rn <- mappedRowNames(rowMap(mats), i)
     cn <- mappedRowNames(colMap(mats), i)
     expect_equal(assays(mats)[[i]], mat.list[[i]][rn, cn, drop = FALSE])
   }
 
+  ## `withDimnames = FALSE` works
   for (i in seq_along(mat.list)) {
     rn <- mappedRowNames(rowMap(mats), i)
     cn <- mappedRowNames(colMap(mats), i)
@@ -181,14 +213,153 @@ test_that("'assays' for FlexAssays", {
     )
   }
 
+  ## `assay(x, i)` and `assays(x)[[i]]` are equivalences
   for (i in seq_along(mats)) {
     expect_equal(assays(mats)[[i]], assay(mats, i))
+    expect_equal(assay(mats, i), mats[[i]])
     expect_equal(
       assays(mats, withDimnames = FALSE)[[i]],
       assay(mats, i, withDimnames = FALSE)
     )
-    expect_equal(assay(mats, i), mats[[i]])
   }
+})
+
+test_that("`assays<-` for FlexAssays", {
+  mat1 <- generate_sparse_matrix(8, 6)
+  mat2 <- generate_sparse_matrix(8, 6)
+  mat3 <- generate_sparse_matrix(8, 6)
+
+  mat.list <- list(mat1, mat2, mat3)
+  mats <- FlexAssays(mat.list)
+
+  # Set `assays<-` will automatically try to re-ordered the rows and columns
+  mats2 <- mats
+  rn <- sample(rownames(mat.list[[1]]))
+  cn <- sample(colnames(mat.list[[1]]))
+  mat.list[[1]] <- mat.list[[1]][rn, cn]
+  assays(mats2) <- mat.list
+  expect_equal(assays(mats2), assays(mats))
+
+  # Subset some assays
+  mat.list <- assays(mats)
+  rn <- rownames(mat.list[[1]])[1:5]
+  cn <- colnames(mat.list[[1]])[1:5]
+  mat.list[[1]] <- mat.list[[1]][rn, cn]
+  assays(mats2) <- mat.list
+  expect_equal(mats2[[2]], mats[[2]])
+  expect_equal(assay(mats2, 3), assay(mats, 3))
+  expect_equal(assay(mats2), assay(mats)[rn, cn])
+
+  # Extend new dim names for some assays
+  mats2 <- mats
+  mat.list <- assays(mats)
+  new.names <- tolower(rownames(mat.list[[1]])[1:3])
+  rownames(mat.list[[1]])[1:3] <- new.names
+  assays(mats2) <- mat.list
+  expect_setequal(rownames(mats2), c(rownames(mats), new.names))
+  expect_equal(assay(mats2, 2), assay(mats, 2))
+  expect_equal(assay(mats2, 3), assay(mats, 3))
+  expect_equal(assay(mats2)[rownames(mat.list[[1]]), ], mat.list[[1]])
+})
+
+test_that("`assays<-` for FlexAssays with `rowFlex = 'bounded'`", {
+  mat1 <- generate_sparse_matrix(8, 6)
+  mat2 <- generate_sparse_matrix(8, 6)
+  mat3 <- generate_sparse_matrix(8, 6)
+
+  mat.list <- list(mat1, mat2, mat3)
+  mats <- FlexAssays(mat.list, rowFlex = 'bounded')
+
+  # Set `assays<-` will automatically try to re-ordered the rows and columns
+  mats2 <- mats
+  rn <- sample(rownames(mat.list[[1]]))
+  cn <- sample(colnames(mat.list[[1]]))
+  mat.list[[1]] <- mat.list[[1]][rn, cn]
+  assays(mats2) <- mat.list
+  expect_equal(assays(mats2), assays(mats))
+
+  # Subset some assays
+  mat.list <- assays(mats)
+  rn <- rownames(mat.list[[1]])[1:5]
+  cn <- colnames(mat.list[[1]])[1:5]
+  mat.list[[1]] <- mat.list[[1]][rn, cn]
+  assays(mats2) <- mat.list
+  expect_equal(assay(mats2, 2), assay(mats, 2))
+  expect_equal(assay(mats2, 3), assay(mats, 3))
+  expect_equal(assay(mats2), assay(mats)[rn, cn])
+
+  # Extend new dim names for some assays (error)
+  mats2 <- mats
+  mat.list <- assays(mats)
+  rownames(mat.list[[1]])[1:3] <- tolower(rownames(mat.list[[1]])[1:3])
+  expect_error(assays(mats2) <- mat.list)
+})
+
+test_that("`assays<-` for FlexAssays with `rowFlex = 'fixed'`", {
+  mat1 <- generate_sparse_matrix(8, 6)
+  mat2 <- generate_sparse_matrix(8, 6)
+  mat3 <- generate_sparse_matrix(8, 6)
+  rownames(mat1) <- rownames(mat2) <- rownames(mat3) <- LETTERS[1:8]
+
+  mat.list <- list(mat1, mat2, mat3)
+  mats <- FlexAssays(mat.list, rowFlex = 'fixed')
+
+  # Set `assays<-` will automatically try to re-ordered the rows and columns
+  mats2 <- mats
+  rn <- sample(rownames(mat.list[[1]]))
+  cn <- sample(colnames(mat.list[[1]]))
+  mat.list[[1]] <- mat.list[[1]][rn, cn]
+  assays(mats2) <- mat.list
+  expect_equal(assays(mats2), assays(mats))
+
+  # Subset some assays (error)
+  mat.list <- assays(mats)
+  rn <- rownames(mat.list[[1]])[1:5]
+  cn <- colnames(mat.list[[1]])[1:5]
+  mat.list[[1]] <- mat.list[[1]][rn, cn]
+  expect_error(assays(mats2) <- mat.list)
+
+  # Extend new dim names for some assays (error)
+  mats2 <- mats
+  mat.list <- assays(mats)
+  rownames(mat.list[[1]])[1:3] <- tolower(rownames(mat.list[[1]])[1:3])
+  expect_error(assays(mats2) <- mat.list)
+})
+
+is_identical_dims <- function(fa1, fa2) {
+  expect_equal(dimnames(fa1), dimnames(fa2))
+  expect_equal(rowFlex(fa1), rowFlex(fa2))
+  expect_equal(colFlex(fa1), colFlex(fa2))
+  expect_equal(assayClasses(fa1), assayClasses(fa2))
+}
+
+test_that("`assasys(x) <- NULL` works", {
+  mat1 <- generate_sparse_matrix(8, 6)
+  mat2 <- generate_sparse_matrix(8, 6)
+  mat3 <- generate_sparse_matrix(8, 6)
+  mat.list <- list(mat1, mat2, mat3)
+  mats <- FlexAssays(mat.list)
+
+  mats2 <- mats
+  assays(mats2) <- NULL
+  is_identical_dims(mats2, mats)
+  expect_length(mats2, 0)
+
+  # rowFlex = "bounded"
+  mats <- FlexAssays(mat.list, rowFlex = "bounded")
+  mats2 <- mats
+  assays(mats2) <- NULL
+  is_identical_dims(mats2, mats)
+  expect_length(mats2, 0)
+
+  # rowFlex = "fixed"
+  rownames(mat1) <- rownames(mat2) <- rownames(mat3) <- LETTERS[1:8]
+  mat.list <- list(mat1, mat2, mat3)
+  mats <- FlexAssays(mat.list, rowFlex = "fixed")
+  mats2 <- mats
+  assays(mats2) <- NULL
+  is_identical_dims(mats2, mats)
+  expect_length(mats2, 0)
 })
 
 test_that("rowFlex = 'free', colFlex = 'free'", {
@@ -216,13 +387,21 @@ test_that("rowFlex = 'fixed', colFlex = 'free'", {
   expect_equal(rownames(mats[[2]]), rownames(mat1))
 
   ## Wrong row names
-  rownames(mat2) <- letters[1:nrow(mat2)]
-  expect_error(mats[[2]] <- mat2)
+  mat3 <- mat2
+  bad.names <- setdiff(letters, rownames(mats))[1:3]
+  rownames(mat3)[1:3] <- bad.names
+  expect_error(mats[[2]] <- mat3)
 
   ## Missed row names
-  rownames(mat2) <- sample(rownames(mat1))
-  mat2 <- mat2[1:4, ]
-  expect_error(mats[[2]] <- mat2)
+  mat3 <- mat2
+  rownames(mat3) <- sample(rownames(mat1))
+  mat3 <- mat3[1:4, ]
+  expect_error(mats[[2]] <- mat3)
+
+  ## Out-of-bound rows
+  mat3 <- generate_sparse_matrix(10, 6)
+  rownames(mat3) <- c(rownames(mat1), "AAA", "BBB")
+  expect_error(mats[[3]] <- mat3)
 })
 
 test_that("rowFlex = 'free', colFlex = 'fixed'", {
@@ -558,6 +737,11 @@ test_that("`drop = TRUE` will remove empty matrices and show warnings", {
   new.rows <- setdiff(rownames(mats), rownames(mats[[2]]))
   new.cols <- setdiff(colnames(mats), colnames(mats[[3]]))
   expect_warning(mats2 <- mats[new.rows, new.cols])
+
+  # Subset to empty
+  mats2 <- mats[integer(), integer()]
+  expect_equal(dim(mats2), c(0, 0))
+  expect_length(mats2, 0)
 })
 
 test_that("`drop = FALSE` will keep empty matrices", {
@@ -763,4 +947,15 @@ test_that("Coerce FlexAssays to SimpleList", {
   mats2 <- FlexAssays(mats1)
   expect_equal(as(mats1, "FlexAssays"), mats2)
   expect_equal(as(as(mats2, "SimpleList"), "FlexAssays"), mats2)
+  expect_equal(as(as(mats2, "SimpleList"), "SimpleFlexAssays"), mats2)
+})
+
+test_that("Coerce FlexAssays to list", {
+  m1 <- generate_sparse_matrix(8, 6)
+  m2 <- generate_sparse_matrix(5, 8)
+  m3 <- generate_sparse_matrix(3, 4)
+
+  mats1 <- list(m1, m2, m3)
+  mats2 <- FlexAssays(mats1)
+  expect_equal(as(as(as.list(mats2), "SimpleList"), "FlexAssays"), mats2)
 })

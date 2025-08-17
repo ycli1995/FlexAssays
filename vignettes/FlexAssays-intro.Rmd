@@ -39,8 +39,9 @@ names. The actual storage formats are handled by the subclasses of
 `FlexAssays`, such as `SimpleFlexAssays`.
 
 * `rowMap` and `colMap`: Logical mapping matrices that define how each assay 
-aligns with the global row and column spaces. These two sparse matrices track 
-which rows or columns of each assay are present in the shared global space.
+aligns with the global row and column names. These two sparse matrices track 
+which rows or columns of each assay are present in the shared global dimensional 
+names.
 
 * `assayClasses`: A character vector indicating the supported classes for 
 assays. This is primarily used for validation. By default, it supports all 

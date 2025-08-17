@@ -9,10 +9,6 @@
 #' @importClassesFrom S4Vectors character_OR_NULL SimpleList
 NULL
 
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-# Class ########################################################################
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 #' The FlexAssays class
 #'
 #' The `FlexAssays` virtual class provide a formal abstraction of layered
@@ -72,10 +68,6 @@ setClass(
   contains = "FlexAssays",
   slots = c(data = "SimpleList")
 )
-
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-# Constructor ##################################################################
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 #' @param assays One of the following:
 #' \itemize{
@@ -206,6 +198,9 @@ FlexAssays <- function(
     assayClasses = NULL,
     ...
 ) {
+  if (missing(assays)) {
+    assays <- NULL
+  }
   if (length(assays) == 0) {
     return(.empty_SimpleFlexAssays(
       rnames = rnames,
@@ -252,38 +247,9 @@ FlexAssays <- function(
   )
 }
 
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-# Validation ###################################################################
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+setValidity2("FlexAssays", function(x) .validFlexAssays(x, immediate. = FALSE))
 
-setValidity2("FlexAssays", function(x) validFlexAssays(x, immediate. = FALSE))
-
-#' Validation for FlexAssays
-#'
-#' Check whether a \code{\link{FlexAssays}} is valid.
-#'
-#' @param x A \code{\link{FlexAssays}} to check.
-#' @param immediate. Logical indicating if the errors should be raised
-#' immediately. Set `immediate. = FALSE` can be useful for context of
-#' `r .doc_links("validObject")`.
-#'
-#' @seealso [getErrors()]
-#'
-#' @returns
-#' Returns an invisible `NULL` if `x` is a valid \code{\link{FlexAssays}}. If
-#' `immediate. = TRUE`, this function will raise an error when `x` is invalid.
-#' Otherwise, it will return a character vector that collects all errors.
-#'
-#' @examples
-#' m1 <- matrix(1:10, 2, 5)
-#' rownames(m1) <- letters[1:2]
-#' colnames(m1) <- LETTERS[1:5]
-#'
-#' fa <- FlexAssays(m1)
-#' validFlexAssays(fa)
-#'
-#' @export
-validFlexAssays <- function(x, immediate. = TRUE) {
+.validFlexAssays <- function(x, immediate. = TRUE) {
   err <- c(validLogMap(x@rowMap, immediate.), validLogMap(x@colMap, immediate.))
 
   assays <- try(assays(x, withDimnames = FALSE), silent = TRUE)
@@ -410,7 +376,14 @@ validFlexAssays <- function(x, immediate. = TRUE) {
     if (length(assays) == 1) {
       return(invisible(NULL))
     }
-    if (Reduce(setequal, lapply(assays, dimfun))) {
+    all.dimnames <- lapply(assays, dimfun)
+    all.check <- all(vapply(
+      X = all.dimnames,
+      FUN = setequal,
+      FUN.VALUE = logical(1L),
+      all.dimnames[[1]]
+    ))
+    if (all.check) {
       return(invisible(NULL))
     }
     funstr <- as.character(substitute(dimfun))
@@ -428,78 +401,6 @@ validFlexAssays <- function(x, immediate. = TRUE) {
     ))
   }
   invisible(err)
-}
-
-.valid_assays_dnames_bounded <- function(
-    assays,
-    dimfun,
-    ref = NULL,
-    immediate. = TRUE
-) {
-  err <- NULL
-  for (i in seq_along(assays)) {
-    err <- c(err, .valid_dnames_bounded(
-      mat = assays[[i]],
-      dimfun = dimfun,
-      ref = ref,
-      mat.name = paste0("assays[[", i, "]]"),
-      immediate. = immediate.
-    ))
-  }
-  invisible(err)
-}
-
-.valid_flex_assay_one_dim <- function(
-    new.assay, dimmap, flex,
-    by = c("row", "col"),
-    immediate. = TRUE,
-    ...
-) {
-  if (flex == "free") {
-    return(invisible(NULL))
-  }
-  by <- match.arg(by)
-  if (flex == "fixed") {
-    return(.valid_dnames_fixed(
-      mat = new.assay,
-      dimfun = if (by == "row") rownames else colnames,
-      ref = rownames(dimmap),
-      immediate. = immediate.,
-      ...
-    ))
-  }
-  .valid_dnames_bounded(
-    mat = new.assay,
-    dimfun = if (by == "row") rownames else colnames,
-    ref = rownames(dimmap),
-    immediate. = immediate.,
-    ...
-  )
-}
-
-.valid_flex_assays_one_dim <- function(
-    new.assays, dimmap, flex,
-    by = c("row", "col"),
-    immediate. = TRUE
-) {
-  if (flex == "free") {
-    return(invisible(NULL))
-  }
-  by <- match.arg(by)
-  if (flex == "fixed") {
-    return(.valid_assays_dnames_fixed(
-      assays = new.assays,
-      dimfun = if (by == "row") rownames else colnames,
-      ref = rownames(dimmap),
-      immediate. = immediate.
-    ))
-  }
-  .valid_assays_dnames_bounded(
-    assays = new.assays,
-    dimfun = if (by == "row") rownames else colnames,
-    ref = rownames(dimmap),
-    immediate. = immediate.
-  )
 }
 
 .valid_mapped_assays_length <- function(
@@ -569,10 +470,6 @@ validFlexAssays <- function(x, immediate. = TRUE) {
   invisible(err)
 }
 
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-# Coerce #######################################################################
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 setAs("SimpleList", "SimpleFlexAssays", function(from) {
   .init_SimpleFlexAssays(from)
 })
@@ -584,10 +481,6 @@ setAs("SimpleList", "FlexAssays", function(from) {
 setAs("FlexAssays", "SimpleList", function(from) {
   assays(from, withDimnames = TRUE)
 })
-
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-# example data #################################################################
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 #' A Mini Example for FlexAssays
 #'

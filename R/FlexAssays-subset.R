@@ -131,7 +131,7 @@ setMethod("[", "FlexAssays", function(x, i, j, ..., drop = TRUE) {
   if (any(nrow(rowmap) == 0, nrow(colmap) == 0) & drop) {
     x@rowMap <- rowmap[, integer(), drop = FALSE]
     x@colMap <- colmap[, integer(), drop = FALSE]
-    return(setRawAssays(x, List()))
+    return(setRawAssays(x, NULL, check = FALSE))
   }
   keep <- logical(length(x))
   assays <- assays(x)
