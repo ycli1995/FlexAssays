@@ -716,29 +716,38 @@ test_that("Index FlexAssays", {
   mat2 <- generate_sparse_matrix(8, 6)
   mat3 <- generate_sparse_matrix(8, 6)
 
+  # Make sure the global dimensional names are long enough.
+  rownames(mat1) <- sample(letters[1:8])
+  rownames(mat2) <- sample(letters[4:11])
+  rownames(mat3) <- sample(letters[12:19])
+
+  colnames(mat1) <- sample(LETTERS[1:6])
+  colnames(mat2) <- sample(LETTERS[4:9])
+  colnames(mat3) <- sample(LETTERS[10:15])
+
   mat.list <- list(mat1, mat2, mat3)
   mats <- FlexAssays(mat.list)
 
   # character indices
   new.rows <- union(sample(rownames(mat1), 5), sample(rownames(mats), 10))
   new.cols <- union(sample(colnames(mat1), 5), sample(colnames(mats), 10))
-  mats2 <- test_subset(mat.list, i = new.rows, drop = FALSE)
-  mats2 <- test_subset(mat.list, j = new.cols, drop = FALSE)
-  mats2 <- test_subset(mat.list, i = new.rows, j = new.cols, drop = FALSE)
+  mats2 <- test_subset(mat.list, i = new.rows)
+  mats2 <- test_subset(mat.list, j = new.cols)
+  mats2 <- test_subset(mat.list, i = new.rows, j = new.cols)
 
   # integer indices
   i <- union(sample(1:5, 5), sample(seq_len(nrow(mats)), 10))
   j <- union(sample(1:4, 4), sample(seq_len(ncol(mats)), 10))
-  mats2 <- test_subset(mat.list, i = i, drop = FALSE)
-  mats2 <- test_subset(mat.list, j = j, drop = FALSE)
-  mats2 <- test_subset(mat.list, i = i, j = j, drop = FALSE)
+  mats2 <- test_subset(mat.list, i = i)
+  mats2 <- test_subset(mat.list, j = j)
+  mats2 <- test_subset(mat.list, i = i, j = j)
 
   # logical indices
   i <- sample(c(TRUE, FALSE), nrow(mats), replace = TRUE)
   j <- sample(c(TRUE, FALSE), ncol(mats), replace = TRUE)
-  mats2 <- test_subset(mat.list, i = i, drop = FALSE)
-  mats2 <- test_subset(mat.list, j = j, drop = FALSE)
-  mats2 <- test_subset(mat.list, i = i, j = j, drop = FALSE)
+  mats2 <- test_subset(mat.list, i = i)
+  mats2 <- test_subset(mat.list, j = j)
+  mats2 <- test_subset(mat.list, i = i, j = j)
 })
 
 test_that("`drop = TRUE` will remove empty matrices and show warnings", {
@@ -749,6 +758,7 @@ test_that("`drop = TRUE` will remove empty matrices and show warnings", {
   mat.list <- list(mat1, mat2, mat3)
   mats <- FlexAssays(mat.list)
 
+  # Make mats[[2]] and mats[[3]] empty
   new.rows <- setdiff(rownames(mats), rownames(mats[[2]]))
   new.cols <- setdiff(colnames(mats), colnames(mats[[3]]))
   expect_warning(mats2 <- mats[new.rows, new.cols])
