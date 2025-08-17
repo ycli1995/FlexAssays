@@ -123,7 +123,6 @@ test_that("Create a FlexAssays with a list, and rowFlex = 'fixed'", {
   mat.list <- list(mat1, mat2[1:4, ])
   expect_error(mats <- FlexAssays(mat.list, rowFlex = "fixed"))
 
-
   mat.list <- list(mat1, mat2)
   mats <- FlexAssays(mat.list, rowFlex = "fixed")
   expect_equal(rownames(mats), rownames(mat1))
@@ -386,146 +385,155 @@ test_that("rowFlex = 'free', colFlex = 'free'", {
   expect_identical(mats2, mats)
 })
 
-test_that("rowFlex = 'fixed', colFlex = 'free'", {
+test_add_mat_fixed <- function(test = c("row", "column")) {
+  test <- match.arg(test)
+  getter <- switch(test, "row" = rownames, "column" = colnames)
+
+  ## Correct rows / columns
   mat1 <- generate_sparse_matrix(8, 6)
-
-  mats <- FlexAssays(mat1, rowFlex = "fixed")
-
-  mat2 <- generate_sparse_matrix(8, 6)
-  rownames(mat2) <- sample(rownames(mat1))
+  mat2 <- generate_sparse_matrix(nrow(mat1), ncol(mat1))
+  if (test == "row") {
+    mats <- FlexAssays(mat1, rowFlex = "fixed")
+    rownames(mat2) <- sample(rownames(mats))
+  } else {
+    mats <- FlexAssays(mat1, colFlex = "fixed")
+    colnames(mat2) <- sample(colnames(mats))
+  }
   mats <- test_add_mat(mats, mat2, 2)
+  expect_equal(getter(mats), getter(mat1))
+  expect_equal(getter(mats[[2]]), getter(mat1))
 
+  ## New assay with wrong dim names (error)
+  mat3 <- mat2
+  if (test == "row") {
+    rownames(mat3)[1:3] <- c("AAA", "BBB", "CCC")
+  } else {
+    colnames(mat3)[1:3] <- c("AAA", "BBB", "CCC")
+  }
+  expect_error(mats[[2]] <- mat3)
+
+  ## New assay with missed rows/columns (error)
+  mat3 <- mat2
+  if (test == "row") {
+    mat3 <- mat3[1:4, ]
+  } else {
+    mat3 <- mat3[, 1:4]
+  }
+  expect_error(mats[[2]] <- mat3)
+
+  ## New assay with extra rows/columns (error)
+  if (test == "row") {
+    mat3 <- generate_sparse_matrix(nrow(mats) + 2, ncol(mats))
+    rownames(mat3) <- c(rownames(mat1), "AAA", "BBB")
+  } else {
+    mat3 <- generate_sparse_matrix(nrow(mats), ncol(mats) + 2)
+    colnames(mat3) <- c(colnames(mat1), "AAA", "BBB")
+  }
+  expect_error(mats[[3]] <- mat3)
+
+  ## Creating a FlexAssays with empty row/column names will not allow to add any
+  ## non-empty assay
+  if (test == "row") {
+    mats <- FlexAssays(rowFlex = "fixed")
+    mat2 <- generate_sparse_matrix(0, 6)
+  } else {
+    mats <- FlexAssays(colFlex = "fixed")
+    mat2 <- generate_sparse_matrix(6, 0)
+  }
+  expect_error(mats[[1]] <- mat1)
+
+  mats[[1]] <- mat2
+  expect_equal(mats[[1]], mat2)
+}
+
+test_that("One of rowFlex / colFlex is 'fixed'", {
+  test_add_mat_fixed(test = "row")
+  test_add_mat_fixed(test = "column")
+})
+
+test_that("Both of rowFlex / colFlex are 'fixed'", {
+  mat1 <- generate_sparse_matrix(8, 6)
+  mats <- FlexAssays(mat1, colFlex = "fixed", rowFlex = "fixed")
+
+  # Correct row/column names
+  mat2 <- generate_sparse_matrix(8, 6)
+  colnames(mat2) <- sample(colnames(mat1))
+  rownames(mat2) <- sample(rownames(mat1))
+
+  mats <- test_add_mat(mats, mat2, 2)
   expect_equal(rownames(mats), rownames(mat1))
+  expect_equal(colnames(mats), colnames(mat1))
   expect_equal(rownames(mats[[2]]), rownames(mat1))
+  expect_equal(colnames(mats[[2]]), colnames(mat1))
 
-  ## Wrong row names
-  mat3 <- mat2
-  bad.names <- setdiff(letters, rownames(mats))[1:3]
-  rownames(mat3)[1:3] <- bad.names
-  expect_error(mats[[2]] <- mat3)
-
-  ## Missed row names
-  mat3 <- mat2
-  rownames(mat3) <- sample(rownames(mat1))
-  mat3 <- mat3[1:4, ]
-  expect_error(mats[[2]] <- mat3)
-
-  ## Out-of-bound rows
-  mat3 <- generate_sparse_matrix(10, 6)
-  rownames(mat3) <- c(rownames(mat1), "AAA", "BBB")
+  mat3 <- generate_sparse_matrix(0, 0)
   expect_error(mats[[3]] <- mat3)
 })
 
-test_that("rowFlex = 'free', colFlex = 'fixed'", {
+test_add_mat_bounded <- function(test = c("row", "column")) {
+  test <- match.arg(test)
+  getter <- switch(test, "row" = rownames, "column" = colnames)
+
   mat1 <- generate_sparse_matrix(8, 6)
-
-  mats <- FlexAssays(mat1, colFlex = "fixed")
-
   mat2 <- generate_sparse_matrix(8, 6)
-  colnames(mat2) <- sample(colnames(mat1))
 
+  # Correct rows/columns
+  if (test == "row") {
+    mats <- FlexAssays(mat1, rowFlex = "bounded")
+    rownames(mat2) <- sample(rownames(mat1))
+    mat3 <- mat2[1:4, ]
+  } else {
+    mats <- FlexAssays(mat1, colFlex = "bounded")
+    colnames(mat2) <- sample(colnames(mat1))
+    mat3 <- mat2[, 1:4]
+  }
   mats <- test_add_mat(mats, mat2, 2)
-  expect_equal(colnames(mats), colnames(mat1))
-  expect_equal(colnames(mats[[2]]), colnames(mat1))
+  expect_equal(getter(mats), getter(mat1))
+  expect_equal(getter(mats[[2]]), getter(mat1))
 
-  colnames(mat2) <- LETTERS[1:ncol(mat2)]
-  expect_error(mats[[2]] <- mat2)
+  mats <- test_add_mat(mats, mat3, 3)
+  expect_equal(getter(mats), getter(mat1))
 
-  colnames(mat2) <- sample(colnames(mat1))
-  mat2 <- mat2[, 1:4]
-  expect_error(mats[[2]] <- mat2)
+  ## out-of-bound row / column names (error)
+  if (test == "row") {
+    rownames(mat3)[1:3] <- c("AAA", "BBB", "CCC")
+  } else {
+    colnames(mat3)[1:3] <- c("AAA", "BBB", "CCC")
+  }
+  expect_error(mats[[3]] <- mat3)
+
+  ## extra rows / columns
+  if (test == "row") {
+    mat3 <- generate_sparse_matrix(nrow(mats) + 2, ncol(mats))
+    rownames(mat3) <- c(rownames(mat1), "AAA", "BBB")
+  } else {
+    mat3 <- generate_sparse_matrix(nrow(mats), ncol(mats) + 2)
+    colnames(mat3) <- c(colnames(mat1), "AAA", "BBB")
+  }
+  expect_error(mats[[3]] <- mat3)
+
+  ## Creating a FlexAssays with empty row/column names will not allow to add any
+  ## non-empty assay
+  if (test == "row") {
+    mats <- FlexAssays(rowFlex = "bounded")
+    mat2 <- generate_sparse_matrix(0, 6)
+  } else {
+    mats <- FlexAssays(colFlex = "bounded")
+    mat2 <- generate_sparse_matrix(6, 0)
+  }
+  expect_error(mats[[1]] <- mat1)
+
+  mats[[1]] <- mat2
+  expect_equal(mats[[1]], mat2)
+}
+
+test_that("One of rowFlex / colFlex is 'bounded'", {
+  test_add_mat_bounded("row")
+  test_add_mat_bounded("column")
 })
 
-test_that("rowFlex = 'fixed', colFlex = 'fixed'", {
+test_that("Both of rowFlex / colFlex are 'bounded'", {
   mat1 <- generate_sparse_matrix(8, 6)
-
-  mats <- FlexAssays(mat1, colFlex = "fixed", rowFlex = "fixed")
-
-  mat2 <- generate_sparse_matrix(8, 6)
-  colnames(mat2) <- sample(colnames(mat1))
-  rownames(mat2) <- sample(rownames(mat1))
-
-  mats[[2]] <- mat2
-  mat.list <- list(mat1, mat2)
-  mats <- test_add_mat(mats, mat2, 2)
-
-  expect_equal(rownames(mats), rownames(mat1))
-  expect_equal(colnames(mats), colnames(mat1))
-  expect_equal(rownames(mats[[2]]), rownames(mat1))
-  expect_equal(colnames(mats[[2]]), colnames(mat1))
-
-  rownames(mat2) <- letters[1:nrow(mat2)]
-  expect_error(mats[[2]] <- mat2)
-
-  rownames(mat2) <- sample(rownames(mat1))
-  mat2 <- mat2[1:4, ]
-  expect_error(mats[[2]] <- mat2)
-
-  colnames(mat2) <- LETTERS[1:ncol(mat2)]
-  expect_error(mats[[2]] <- mat2)
-
-  colnames(mat2) <- sample(colnames(mat1))
-  mat2 <- mat2[, 1:4]
-  expect_error(mats[[2]] <- mat2)
-})
-
-test_that("rowFlex = 'bounded', colFlex = 'free'", {
-  mat1 <- generate_sparse_matrix(8, 6)
-
-  mats <- FlexAssays(mat1, rowFlex = "bounded")
-
-  mat2 <- generate_sparse_matrix(8, 6)
-  rownames(mat2) <- sample(rownames(mat1))
-
-  mats <- test_add_mat(mats, mat2, 2)
-  expect_equal(rownames(mats), rownames(mat1))
-  expect_equal(rownames(mats[[2]]), rownames(mat1))
-
-  ## within-bound row names
-  rownames(mat2) <- sample(rownames(mat1))
-  mat2 <- mat2[1:4, ]
-
-  mats <- test_add_mat(mats, mat2, 2)
-  expect_equal(rownames(mats), rownames(mat1))
-  expect_in(rownames(mats[[2]]), rownames(mat1))
-
-  ## out-of-bound row names
-  new.names <- c(setdiff(LETTERS, rownames(mat1)), rownames(mat1))[1:nrow(mat2)]
-  rownames(mat2) <- new.names
-  expect_error(mats[[2]] <- mat2)
-})
-
-test_that("rowFlex = 'free', colFlex = 'bounded'", {
-  mat1 <- generate_sparse_matrix(8, 6)
-
-  # colFlex == "bounded"
-  mats <- FlexAssays(mat1, colFlex = "bounded")
-
-  mat2 <- generate_sparse_matrix(8, 6)
-  colnames(mat2) <- sample(colnames(mat1))
-
-  mats <- test_add_mat(mats, mat2, 2)
-  expect_equal(colnames(mats), colnames(mat1))
-  expect_equal(colnames(mats[[2]]), colnames(mat1))
-
-  ## within-bound column names
-  colnames(mat2) <- sample(colnames(mat1))
-  mat2 <- mat2[, 1:4]
-
-  mats <- test_add_mat(mats, mat2, 2)
-  expect_equal(colnames(mats), colnames(mat1))
-  expect_in(colnames(mats[[2]]), colnames(mat1))
-
-  ## out-of-bound column names
-  new.names <- c(setdiff(letters, colnames(mat1)), colnames(mat1))[1:ncol(mat2)]
-  colnames(mat2) <- new.names
-  expect_error(mats[[2]] <- mat2)
-})
-
-test_that("rowFlex = 'bounded', colFlex = 'bounded'", {
-  mat1 <- generate_sparse_matrix(8, 6)
-
-  # both "bounded"
   mats <- FlexAssays(mat1, colFlex = "bounded", rowFlex = "bounded")
 
   mat2 <- generate_sparse_matrix(8, 6)
@@ -544,19 +552,12 @@ test_that("rowFlex = 'bounded', colFlex = 'bounded'", {
   expect_in(rownames(mats[[2]]), rownames(mat1))
   expect_in(colnames(mats[[2]]), colnames(mat1))
 
-  ## out-of-bound row names
-  new.names <- c(setdiff(LETTERS, rownames(mat1)), rownames(mat1))[1:nrow(mat2)]
-  rownames(mat2) <- new.names
-  expect_error(mats[[2]] <- mat2)
-
-  ## out-of-bound column names
-  new.names <- c(setdiff(letters, colnames(mat1)), colnames(mat1))[1:ncol(mat2)]
-  colnames(mat2) <- new.names
-  expect_error(mats[[2]] <- mat2)
-
+  mat3 <- generate_sparse_matrix(0, 0)
+  mats[[3]] <- mat3
+  expect_equal(mats[[3]], mat3)
 })
 
-test_that("rowFlex = 'fixed, colFlex = 'bounded'", {
+test_that("rowFlex = 'fixed', colFlex = 'bounded'", {
   mat1 <- generate_sparse_matrix(8, 6)
 
   mats <- FlexAssays(mat1, rowFlex = "fixed", colFlex = "bounded")
