@@ -559,9 +559,9 @@ test_that("Both of rowFlex / colFlex are 'bounded'", {
 
 test_that("rowFlex = 'fixed', colFlex = 'bounded'", {
   mat1 <- generate_sparse_matrix(8, 6)
-
   mats <- FlexAssays(mat1, rowFlex = "fixed", colFlex = "bounded")
 
+  # Correct rows and subset of columns
   mat2 <- generate_sparse_matrix(8, 6)
   rownames(mat2) <- sample(rownames(mat1))
   colnames(mat2) <- sample(colnames(mat1))
@@ -573,25 +573,26 @@ test_that("rowFlex = 'fixed', colFlex = 'bounded'", {
   expect_equal(rownames(mats[[2]]), rownames(mat1))
   expect_in(colnames(mats[[2]]), colnames(mat1))
 
+  # Subset of rows (error)
   mat3 <- mat2[1:4, ]
   expect_error(mats[[2]] <- mat3)
 
+  # Wrong row names (error)
   mat3 <- mat2
-  new.names <- c(setdiff(LETTERS, rownames(mat1)), rownames(mat1))[1:nrow(mat3)]
-  rownames(mat3) <- new.names
+  rownames(mat3)[1:3] <- c("AAA", "BBB", "CCC")
   expect_error(mats[[2]] <- mat3)
 
+  # Wrong column names (error)
   mat3 <- mat2
-  new.names <- c(setdiff(letters, colnames(mat1)), colnames(mat1))[1:ncol(mat3)]
-  colnames(mat3) <- new.names
+  colnames(mat3)[1:3] <- c("AAA", "BBB", "CCC")
   expect_error(mats[[2]] <- mat3)
 })
 
 test_that("rowFlex = 'bounded, colFlex = 'fixed'", {
   mat1 <- generate_sparse_matrix(8, 6)
-
   mats <- FlexAssays(mat1, rowFlex = "bounded", colFlex = "fixed")
 
+  # Subset of rows and correct columns
   mat2 <- generate_sparse_matrix(8, 6)
   rownames(mat2) <- sample(rownames(mat1))
   colnames(mat2) <- sample(colnames(mat1))
@@ -603,17 +604,18 @@ test_that("rowFlex = 'bounded, colFlex = 'fixed'", {
   expect_in(rownames(mats[[2]]), rownames(mat1))
   expect_equal(colnames(mats[[2]]), colnames(mat1))
 
+  # Subset of columns (error)
   mat3 <- mat2[, 1:4]
   expect_error(mats[[2]] <- mat3)
 
+  # Wrong row names (error)
   mat3 <- mat2
-  new.names <- c(setdiff(LETTERS, rownames(mat1)), rownames(mat1))[1:nrow(mat3)]
-  rownames(mat3) <- new.names
+  rownames(mat3)[1:3] <- c("AAA", "BBB", "CCC")
   expect_error(mats[[2]] <- mat3)
 
+  # Wrong column names (error)
   mat3 <- mat2
-  new.names <- c(setdiff(letters, colnames(mat1)), colnames(mat1))[1:ncol(mat3)]
-  colnames(mat3) <- new.names
+  colnames(mat3)[1:3] <- c("AAA", "BBB", "CCC")
   expect_error(mats[[2]] <- mat3)
 })
 
@@ -631,7 +633,7 @@ test_that("Remove existing assays", {
   expect_equal(mats[[2]], mat3[rn, cn, drop = FALSE])
 })
 
-test_that("Add new assay without dimension names", {
+test_that("Adding new assay without dimension names should fail", {
   mat1 <- generate_sparse_matrix(8, 6)
   mat2 <- generate_sparse_matrix(8, 6)
 
@@ -720,23 +722,23 @@ test_that("Index FlexAssays", {
   # character indices
   new.rows <- union(sample(rownames(mat1), 5), sample(rownames(mats), 10))
   new.cols <- union(sample(colnames(mat1), 5), sample(colnames(mats), 10))
-  mats2 <- test_subset(mat.list, i = new.rows)
-  mats2 <- test_subset(mat.list, j = new.cols)
-  mats2 <- test_subset(mat.list, i = new.rows, j = new.cols)
+  mats2 <- test_subset(mat.list, i = new.rows, drop = FALSE)
+  mats2 <- test_subset(mat.list, j = new.cols, drop = FALSE)
+  mats2 <- test_subset(mat.list, i = new.rows, j = new.cols, drop = FALSE)
 
   # integer indices
   i <- union(sample(1:5, 5), sample(seq_len(nrow(mats)), 10))
   j <- union(sample(1:4, 4), sample(seq_len(ncol(mats)), 10))
-  mats2 <- test_subset(mat.list, i = i)
-  mats2 <- test_subset(mat.list, j = j)
-  mats2 <- test_subset(mat.list, i = i, j = j)
+  mats2 <- test_subset(mat.list, i = i, drop = FALSE)
+  mats2 <- test_subset(mat.list, j = j, drop = FALSE)
+  mats2 <- test_subset(mat.list, i = i, j = j, drop = FALSE)
 
   # logical indices
   i <- sample(c(TRUE, FALSE), nrow(mats), replace = TRUE)
   j <- sample(c(TRUE, FALSE), ncol(mats), replace = TRUE)
-  mats2 <- test_subset(mat.list, i = i)
-  mats2 <- test_subset(mat.list, j = j)
-  mats2 <- test_subset(mat.list, i = i, j = j)
+  mats2 <- test_subset(mat.list, i = i, drop = FALSE)
+  mats2 <- test_subset(mat.list, j = j, drop = FALSE)
+  mats2 <- test_subset(mat.list, i = i, j = j, drop = FALSE)
 })
 
 test_that("`drop = TRUE` will remove empty matrices and show warnings", {
