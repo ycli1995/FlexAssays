@@ -342,13 +342,10 @@ setValidity2("FlexAssays", function(x) .validFlexAssays(x, immediate. = FALSE))
 .valid_dnames_fixed <- function(
     mat,
     dimfun,
-    ref = NULL,
+    ref,
     mat.name = "",
     immediate. = TRUE
 ) {
-  if (length(ref) == 0) {
-    return(invisible(NULL))
-  }
   if (setequal(ref, dimfun(mat))) {
     return(invisible(NULL))
   }
@@ -376,19 +373,7 @@ setValidity2("FlexAssays", function(x) .validFlexAssays(x, immediate. = FALSE))
     if (length(assays) == 1) {
       return(invisible(NULL))
     }
-    all.dimnames <- lapply(assays, dimfun)
-    all.check <- all(vapply(
-      X = all.dimnames,
-      FUN = setequal,
-      FUN.VALUE = logical(1L),
-      all.dimnames[[1]]
-    ))
-    if (all.check) {
-      return(invisible(NULL))
-    }
-    funstr <- as.character(substitute(dimfun))
-    fmt <- "All assays must contain the same '%s()'"
-    return(getErrors(sprintf(fmt, funstr), immediate. = immediate.))
+    ref <- dimfun(assays[[1]])
   }
   err <- NULL
   for (i in seq_along(assays)) {
