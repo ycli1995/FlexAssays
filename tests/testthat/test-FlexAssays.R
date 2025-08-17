@@ -340,6 +340,7 @@ test_that("`assasys(x) <- NULL` works", {
   mat.list <- list(mat1, mat2, mat3)
   mats <- FlexAssays(mat.list)
 
+  # Remove all assays but keep the global dimensional names
   mats2 <- mats
   assays(mats2) <- NULL
   is_identical_dims(mats2, mats)
@@ -367,11 +368,22 @@ test_that("rowFlex = 'free', colFlex = 'free'", {
   mat2 <- generate_sparse_matrix(8, 6)
   mat3 <- generate_sparse_matrix(8, 6)
 
-  mat.list <- list(mat1, mat2, mat3)
-  mats <- FlexAssays(mat1)
-  mats <- test_add_mat(mats, mat2, 2)
-  mats <- test_add_mat(mats, mat3, "m3")
-  expect_length(mats, 3)
+  # Free to add arbitrary matrices
+  mat.list <- list(mat1, mat2, m3 = mat3)
+  mats <- FlexAssays(mat.list)
+
+  mats2 <- FlexAssays(mat1)
+  mats2 <- test_add_mat(mats2, mat2, 2)
+  mats2 <- test_add_mat(mats2, mat3, "m3")
+  expect_length(mats2, 3)
+  expect_identical(mats2, mats)
+
+  mats2 <- FlexAssays()
+  mats2 <- test_add_mat(mats2, mat1, 1)
+  mats2 <- test_add_mat(mats2, mat2, 2)
+  mats2 <- test_add_mat(mats2, mat3, "m3")
+  expect_length(mats2, 3)
+  expect_identical(mats2, mats)
 })
 
 test_that("rowFlex = 'fixed', colFlex = 'free'", {
