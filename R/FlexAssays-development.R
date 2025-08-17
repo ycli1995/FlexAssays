@@ -436,17 +436,17 @@ setMethod(
 .valid_new_assay <- function(x, i, new.assay) {
   .valid_assay_classes(new.assay, x@assayClasses)
   if (nrow(new.assay) > 0 & length(rownames(new.assay)) == 0) {
-    stop("'new.assay' must contain row names with non-empty rows.")
+    stop("New assay '", i, "' must have row names with non-empty rows.")
   }
   if (ncol(new.assay) > 0 & length(colnames(new.assay)) == 0) {
-    stop("'new.assay' must contain column names with non-empty columns.")
+    stop("New assay '", i, "' must have column names with non-empty columns.")
   }
   if (x@rowFlex == "fixed") {
     .valid_dnames_fixed(
       new.assay,
       dimfun = rownames,
       ref = rownames(x@rowMap),
-      mat.name = "new.assay"
+      mat.name = paste0("<assays[[", i, "]]>")
     )
   }
   if (x@rowFlex == "bounded") {
@@ -454,7 +454,7 @@ setMethod(
       new.assay,
       dimfun = rownames,
       ref = rownames(x@rowMap),
-      mat.name = "new.assay"
+      mat.name = paste0("<assays[[", i, "]]>")
     )
   }
   if (x@colFlex == "fixed") {
@@ -462,7 +462,7 @@ setMethod(
       new.assay,
       dimfun = colnames,
       ref = rownames(x@colMap),
-      mat.name = "new.assay"
+      mat.name = paste0("<assays[[", i, "]]>")
     )
   }
   if (x@colFlex == "bounded") {
@@ -470,7 +470,7 @@ setMethod(
       new.assay,
       dimfun = colnames,
       ref = rownames(x@colMap),
-      mat.name = "new.assay"
+      mat.name = paste0("<assays[[", i, "]]>")
     )
   }
   invisible(NULL)
