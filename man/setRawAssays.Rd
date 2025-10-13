@@ -3,14 +3,17 @@
 \name{setRawAssays}
 \alias{setRawAssays}
 \alias{setRawAssays,SimpleFlexAssays,list_OR_List-method}
-\alias{setRawAssays,SimpleFlexAssays,NULL-method}
+\alias{cleanRawAssays}
+\alias{cleanRawAssays,SimpleFlexAssays-method}
 \title{Update all assays with/without validation}
 \usage{
 setRawAssays(x, new.assays, check = TRUE, ...)
 
 \S4method{setRawAssays}{SimpleFlexAssays,list_OR_List}(x, new.assays, check = TRUE, ...)
 
-\S4method{setRawAssays}{SimpleFlexAssays,NULL}(x, new.assays, check = TRUE, ...)
+cleanRawAssays(x, check = TRUE, ...)
+
+\S4method{cleanRawAssays}{SimpleFlexAssays}(x, check = TRUE, ...)
 }
 \arguments{
 \item{x}{A \code{\link{FlexAssays}} object.}
@@ -25,15 +28,32 @@ for \code{rowFlex}, \code{colFlex} and \code{assayClasses}.}
 \item{...}{Arguments passed to other methods.}
 }
 \value{
-Returns an updated \code{\link{FlexAssays}} object with \code{new.assays} set into the
-corresponding slot.
+\code{setRawAssays} returns an updated \code{\link{FlexAssays}} object with \code{new.assays} set
+into the corresponding slot.
+
+\code{cleanRawAssays} returns an updated \code{\link{FlexAssays}} object with the internal
+assay data and the corresponding dimensional maps are cleaned.
 }
 \description{
-This is intended for low-level manipulation, e.g., programmatically replacing
-all matrix-like objects in a sub-class of \code{\link{FlexAssays}}.
+These functions are intended for low-level manipulation, e.g.,
+programmatically replacing all matrix-like objects in a sub-class of
+\code{\link{FlexAssays}}.
 }
 \details{
-This method is lower-level than \code{\link{assays<-}} and is only intended for
-development usage. It can bypass the time consuming validation, therefore the
-caller must ensure \code{new.assays} are fitted with the original \code{FlexAssays}.
+\code{setRawAssays} is a lower-level function than \code{\link[SummarizedExperiment:SummarizedExperiment-class]{SummarizedExperiment::assays<-}} and is only
+intended for development usage. It can bypass the time consuming validation,
+therefore the caller must ensure \code{new.assays} are fitted with the correct
+slot for the subclass of \code{\link{FlexAssays}}.
+}
+\examples{
+fa <- exampleFlexAssays()
+aa <- assays(fa)[1:2]
+
+## ERROR: The number of assays is 2, but the dimensional map has 3 columns.
+try(fa <- setRawAssays(fa, aa))
+
+## Clean all assays while keep the dimensional rules.
+fa <- exampleFlexAssays()
+fa <- cleanRawAssays(fa)
+
 }

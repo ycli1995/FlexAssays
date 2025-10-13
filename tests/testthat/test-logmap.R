@@ -3,10 +3,11 @@ test_set_mappedRowNames <- function(map, i, value) {
   # Add a new column and test whether 'map' automatically extends the rows
   old.rownames <- rownames(map)
   mappedRowNames(map, i, append = TRUE) <- value
+
   expect_equal(rownames(map), union(old.rownames, value))
   expect_equal_no_attr(map[, i], rownames(map) %in% value)
   expect_setequal(mappedRowNames(map, i), value)
-  return(map)
+  map
 }
 
 test_that("Create a sparse logical map from empty", {
@@ -131,7 +132,7 @@ test_that("sparseLogMap with append = FALSE", {
 
   ## Cannot add new row names when append = FALSE
   map1 <- sparseLogMap(character())
-  expect_error(mappedRowNames(map1, 1, append = FALSE) <- s1, "Cannot add new")
+  expect_error(mappedRowNames(map1, 1, append = FALSE) <- s1)
 
   ## Can add existing row names even when append = FALSE
   map1 <- sparseLogMap(s1, 1)

@@ -17,20 +17,14 @@ row names.}
 column names.}
 }
 \value{
-The input matrix with updated row and/or column names.
+The input matrix with updated row and/or column names. The default
+arguments will clear original row names and column names.
 }
 \description{
 Replaces the row and/or column names of a matrix or matrix-like object.
 }
 \examples{
 mat <- matrix(1:4, nrow = 2)
-resetDimNames(
-  mat,
-  rownames = c("gene1", "gene2"),
-  colnames = c("cell1", "cell2")
-)
-
-resetDimNames(mat)
-# returns mat with no row/column names
-
+resetDimNames(mat, rownames = c("g1", "g2"), colnames = c("c1", "c2"))
+resetDimNames(mat) # returns mat with no row/column names
 }

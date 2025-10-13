@@ -1,6 +1,4 @@
-#' @include FlexAssays-methods.R
-#'
-#' @importFrom utils .DollarNames
+#' @include FlexAssays.R
 NULL
 
 #' Subset a FlexAssays
@@ -13,6 +11,9 @@ NULL
 #'
 #' @seealso [FlexAssays()] for object construction and structure.
 #'
+#' @examples
+#' fa <- exampleFlexAssays()
+#'
 #' @name FlexAssays-subset
 NULL
 
@@ -24,6 +25,10 @@ NULL
 #' \item `[[`: Returns a matrix-like assay with dimension names for the `i`-th
 #' element of `x`.
 #' }
+#'
+#' @examples
+#' fa[[1]]
+#' fa[["m1"]]
 #'
 #' @export
 #' @rdname FlexAssays-subset
@@ -43,7 +48,6 @@ setMethod(
 #' }
 #'
 #' @examples
-#' fa <- exampleFlexAssays()
 #' fa[[4]] <- fa[[1]]
 #'
 #' @aliases [[<-,FlexAssays,ANY,missing-method
@@ -69,6 +73,8 @@ setMethod(
 #' }
 #'
 #' @seealso [.DollarNames()] for the S3 generic.
+#'
+#' @importFrom utils .DollarNames
 #'
 #' @method .DollarNames FlexAssays
 #' @export
@@ -129,9 +135,9 @@ setMethod("[", "FlexAssays", function(x, i, j, ..., drop = TRUE) {
     colmap <- colmap[j, , drop = FALSE]
   }
   if (any(nrow(rowmap) == 0, nrow(colmap) == 0) & drop) {
-    x@rowMap <- rowmap[, integer(), drop = FALSE]
-    x@colMap <- colmap[, integer(), drop = FALSE]
-    return(setRawAssays(x, NULL, check = FALSE))
+    x@rowMap <- rowmap
+    x@colMap <- colmap
+    return(cleanRawAssays(x))
   }
   keep <- logical(length(x))
   assays <- assays(x)

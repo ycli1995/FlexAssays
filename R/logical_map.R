@@ -1,8 +1,4 @@
 #' @include utils.R
-#'
-#' @importFrom SparseArray SVT_SparseArray
-#' @importFrom Matrix colSums Matrix rowSums
-#' @importClassesFrom SparseArray SVT_SparseMatrix
 NULL
 
 #' @importFrom SparseArray cbind
@@ -30,9 +26,9 @@ SparseArray_rbind <- SparseArray::rbind
 #' `x` is present in each observation.
 #'
 #' @details
-#' This helper is typically used internally within \code{FlexAssays} or similar
-#' containers to track shared or mapped features across multiple datasets or
-#' samples, while minimizing memory usage via sparse representation.
+#' This helper is typically used internally within \code{\link{FlexAssays}} or
+#' similar containers to track shared or mapped features across multiple
+#' datasets or samples, while minimizing memory usage via sparse representation.
 #'
 #' @examples
 #' # Create a sparse logical map
@@ -43,16 +39,16 @@ SparseArray_rbind <- SparseArray::rbind
 #' map <- sparseLogMap(LETTERS, ncol = length(obs), names = obs)
 #' map
 #'
+#' @importFrom SparseArray SVT_SparseArray
+#'
 #' @rdname sparseLogMap
 #' @export
 sparseLogMap <- function(x = character(), ncol = 0, names = NULL, ...) {
   if (missing(ncol)) {
     ncol <- length(names)
   }
-  out <- SVT_SparseArray(
-    as(Matrix(FALSE, length(x), ncol, sparse = TRUE), "generalMatrix"),
-    type = "logical"
-  )
+  nrow <- length(x)
+  out <- SVT_SparseArray(dim = c(nrow, ncol), type = "logical")
   colnames(out) <- names
   rownames(out) <- x
   out
@@ -117,30 +113,33 @@ NULL
     if (is.na(idx)) {
       idx <- ncol(x) + 1L
     }
-    return(.add_logmap_labels(x, idx, value, new.name = i, append = append))
+    return(.add_mapped_row_names(x, idx, value, new.name = i, append = append))
   }
   i <- as.integer(i)
-  .add_logmap_labels(x, i, value, append = append, ...)
+  .add_mapped_row_names(x, i, value, append = append, ...)
 }
 
-.add_logmap_labels <- function(x, i, value, new.name = NULL, append = TRUE) {
+.add_mapped_row_names <- function(x, i, value, new.name = NULL, append = TRUE) {
   if (i > ncol(x) + 1) {
     stop("Subscript out of bounds: ", i)
   }
   new.mat <- logical(nrow(x))
   not.found <- NULL
   if (length(value) > 0) {
-    stopifnot(is.character(value))
-    stopifnot(!anyDuplicated(value))
+    if (!is.character(value)) {
+      stop("New row names must be a character vector.")
+    }
+    if (anyDuplicated(value)) {
+      stop("New row names must not be duplicated.")
+    }
     idx <- match(value, rownames(x), nomatch = 0L)
     new.mat[idx] <- TRUE
     not.found <- value[idx == 0]
   }
-  if (i > ncol(x)) {
-    new.mat <- SVT_SparseArray(
-      Matrix(new.mat, ncol = 1, sparse = TRUE),
-      type = "logical"
-    )
+  if (i <= ncol(x)) {
+    x[, i] <- new.mat
+  } else {
+    new.mat <- SVT_SparseArray(new.mat, dim = c(nrow(x), 1), type = "logical")
     colnames(new.mat) <- new.name
     if (ncol(x) > 0) {
       x <- SparseArray_cbind(x, new.mat)
@@ -148,14 +147,12 @@ NULL
       rownames(new.mat) <- rownames(x)
       x <- new.mat
     }
-  } else {
-    x[, i] <- new.mat
   }
   if (length(not.found) == 0) {
     return(x)
   }
   if (!append) {
-    stop("Cannot add new rownames for a logical map when 'append' is FALSE")
+    stop("Cannot add non-existing rownames for when 'append' is FALSE")
   }
   empty.mat <- sparseLogMap(not.found, ncol(x), colnames(x))
   empty.mat[, i] <- TRUE
@@ -189,7 +186,7 @@ mappedRowNames <- function(x, i, invert = FALSE, ...) {
 #' @param type Type of row intersection to return:
 #' \itemize{
 #' \item `all`(the default): features shared by all columns.
-#' \item `duplicated`: features shared by at least two columns.
+#' \item `duplicated`: features shared by at least **two** columns.
 #' }
 #'
 #' @returns
@@ -201,6 +198,8 @@ mappedRowNames <- function(x, i, invert = FALSE, ...) {
 #' @examples
 #' # Which rows contain names that are mapped to multiple columns.
 #' intersectedRows(map)
+#'
+#' @importFrom SparseArray rowSums
 #'
 #' @rdname logmap-helpers
 #' @export
@@ -223,6 +222,8 @@ intersectedRows <- function(x, type = c("all", "duplicated"), ...) {
 #' # Drop rows whose names have no column mapped to.
 #' dropMapRows(map)
 #'
+#' @importFrom SparseArray rowSums
+#'
 #' @rdname logmap-helpers
 #' @export
 dropMapRows <- function(x, ...) {
@@ -243,6 +244,8 @@ dropMapRows <- function(x, ...) {
 #' @examples
 #' # Drop columns that no row names are mapped to.
 #' dropMapCols(map)
+#'
+#' @importFrom SparseArray colSums
 #'
 #' @rdname logmap-helpers
 #' @export
@@ -290,7 +293,7 @@ removeMapCols <- function(x, i, ...) {
     return(x)
   }
   if (any(i > ncol(x))) {
-    stop("Subscript out of bounds(", ncol(x), "): ", i[i > 0][[1]])
+    stop("Subscript out of bounds (", ncol(x), "): ", i[i > ncol(x)][[1]])
   }
   x[, -i, drop = FALSE]
 }
@@ -314,11 +317,12 @@ validLogMap <- function(x, immediate. = TRUE) {
   ))
 }
 
+#' @importClassesFrom SparseArray SVT_SparseMatrix
 .valid_classes_logical_map <- function(x, immediate. = TRUE) {
   if (inherits(x, c("SVT_SparseMatrix"))) {
     return(invisible(NULL))
   }
-  fmt <- "Invalid logical map <%s>."
+  fmt <- "Invalid logical map class: <%s>."
   getErrors(sprintf(fmt, class(x)[1]), immediate. = immediate.)
 }
 
@@ -351,8 +355,8 @@ validLogMap <- function(x, immediate. = TRUE) {
     err <- getErrors(e, err, immediate.)
   }
   if (anyDuplicated(rnames)) {
-    err <- getErrors("Duplicate row names not allowed.", err, immediate.)
+    e <- "Duplicate row names not allowed for a logical map."
+    err <- getErrors(e, err, immediate.)
   }
   invisible(err)
 }
-

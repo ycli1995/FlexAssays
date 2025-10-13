@@ -1,10 +1,6 @@
 
 #' Collect and handle errors in a standardized way
 #'
-#' @description
-#' A short description...
-#'
-#'
 #' `getErrors()` helps accumulate error messages during validity checks
 #' or other internal validations. It supports returning the accumulated
 #' errors or stopping immediately.
@@ -33,7 +29,7 @@ getErrors <- function(e = NULL, err = NULL, immediate. = TRUE) {
   if (immediate.) {
     stop(e, call. = FALSE)
   }
-  return(invisible(c(err, e)))
+  invisible(c(err, e))
 }
 
 #' Display the S4 class title for an object
@@ -172,19 +168,14 @@ fastIntersect <- function(x, y, keep.duplicated = TRUE) {
 #' @param colnames A character vector for new column names, or `NULL` to remove
 #' column names.
 #'
-#' @return The input matrix with updated row and/or column names.
+#' @return The input matrix with updated row and/or column names. The default
+#' arguments will clear original row names and column names.
 #'
 #' @examples
 #' mat <- matrix(1:4, nrow = 2)
-#' resetDimNames(
-#'   mat,
-#'   rownames = c("gene1", "gene2"),
-#'   colnames = c("cell1", "cell2")
-#' )
-#'
-#' resetDimNames(mat)
-#' # returns mat with no row/column names
-#'
+#' resetDimNames(mat, rownames = c("g1", "g2"), colnames = c("c1", "c2"))
+#' resetDimNames(mat) # returns mat with no row/column names
+#
 #' @export
 resetDimNames <- function(mat, rownames = NULL, colnames = NULL) {
   rownames(mat) <- rownames

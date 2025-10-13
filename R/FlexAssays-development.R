@@ -1,4 +1,6 @@
-#' @include FlexAssays-class.R
+#' @include utils.R
+#' @include logical_map.R
+#' @include FlexAssays.R
 #'
 #' @importFrom methods setGeneric setMethod validObject
 #' @importFrom BiocGenerics updateObject
@@ -29,13 +31,10 @@ NULL
 #' @aliases updateObject updateObject,FlexAssays-method
 #' @name FlexAssays-updateObject
 setMethod("updateObject", "FlexAssays", function(object, ..., verbose = FALSE) {
-  assays <- updateObject(
-    assays(object, withDimnames = FALSE),
-    verbose = verbose
-  )
+  a <- updateObject(assays(object, withDimnames = FALSE), verbose = verbose)
   object@rowMap <- updateObject(object@rowMap, ..., verbose = verbose)
   object@colMap <- updateObject(object@colMap, ..., verbose = verbose)
-  setRawAssays(object, assays, check = FALSE)
+  setRawAssays(object, a, check = FALSE)
 })
 
 #' Dimensional map for FlexAssays
@@ -139,13 +138,27 @@ setMethod("assayClasses", "FlexAssays", function(x) x@assayClasses)
 
 #' Update all assays with/without validation
 #'
-#' This is intended for low-level manipulation, e.g., programmatically replacing
-#' all matrix-like objects in a sub-class of [`FlexAssays`].
+#' These functions are intended for low-level manipulation, e.g.,
+#' programmatically replacing all matrix-like objects in a sub-class of
+#' [`FlexAssays`].
 #'
+#' @name setRawAssays
+NULL
+
 #' @param x A [`FlexAssays`] object.
 #' @param ... `r .dot_param`
 #'
-#' @name setRawAssays
+#' @details
+#' `setRawAssays` is a lower-level function than [`assays<-`] and is only
+#' intended for development usage. It can bypass the time consuming validation,
+#' therefore the caller must ensure `new.assays` are fitted with the correct
+#' slot for the subclass of [`FlexAssays`].
+#'
+#' @returns
+#' `setRawAssays` returns an updated [`FlexAssays`] object with `new.assays` set
+#' into the corresponding slot.
+#'
+#' @rdname setRawAssays
 #' @export
 setGeneric("setRawAssays", function(x, new.assays, check = TRUE, ...) {
   standardGeneric("setRawAssays")
@@ -157,14 +170,12 @@ setGeneric("setRawAssays", function(x, new.assays, check = TRUE, ...) {
 #' validate the object after replacement. Setting it to `FALSE` will skip checks
 #' for `rowFlex`, `colFlex` and `assayClasses`.
 #'
-#' @details
-#' This method is lower-level than [`assays<-`] and is only intended for
-#' development usage. It can bypass the time consuming validation, therefore the
-#' caller must ensure `new.assays` are fitted with the original `FlexAssays`.
+#' @examples
+#' fa <- exampleFlexAssays()
+#' aa <- assays(fa)[1:2]
 #'
-#' @returns
-#' Returns an updated [`FlexAssays`] object with `new.assays` set into the
-#' corresponding slot.
+#' ## ERROR: The number of assays is 2, but the dimensional map has 3 columns.
+#' try(fa <- setRawAssays(fa, aa))
 #'
 #' @rdname setRawAssays
 #' @export
@@ -183,298 +194,32 @@ setMethod(
   }
 )
 
+#' @returns
+#' `cleanRawAssays` returns an updated [`FlexAssays`] object with the internal
+#' assay data and the corresponding dimensional maps are cleaned.
+#'
 #' @rdname setRawAssays
 #' @export
-setMethod(
-  "setRawAssays", c("SimpleFlexAssays", "NULL"),
-  function(x, new.assays, check = TRUE, ...) {
-    x@data <- SimpleList()
-    x
-  }
-)
-
-#' Get or set assays
-#'
-#' Methods to access or update the assay list for a  \code{\link{FlexAssays}}.
-#'
-#' @param x A \code{\link{FlexAssays}} object.
-#' @param ... `r .dot_param`
-#'
-#' @name FlexAssays-assays
-NULL
-
-#' @param withDimnames Logical, indicating whether to restore the dimnames of
-#' assays from `rowMap` or `colMap`. Default is `TRUE`.
-#'
-#' @returns
-#' \itemize{
-#' \item `assays()`: Returns a list of matrix-like assays, optionally with
-#' restored dimension names.
-#' }
-#'
-#' @examples
-#' ## assays
-#' fa <- exampleFlexAssays()
-#' assays(fa)
-#'
-#' @rdname FlexAssays-assays
-#' @export
-setMethod("assays", "SimpleFlexAssays", function(x, withDimnames = TRUE, ...) {
-  assays <- x@data
-  if (!withDimnames) {
-    return(assays)
-  }
-  for (i in seq_along(assays)) {
-    assays[[i]] <- resetDimNames(
-      assays[[i]],
-      rownames = mappedRowNames(x@rowMap, i),
-      colnames = mappedRowNames(x@colMap, i)
-    )
-  }
-  assays
+setGeneric("cleanRawAssays", function(x, check = TRUE, ...) {
+  standardGeneric("cleanRawAssays")
 })
 
-#' @param value An object of a class specified in the S4 method signature.
-#' \itemize{
-#' \item `assays<-`: A list of matrix-like objects to set as the internal assay
-#' data of `x`. If is `NULL`, all assays in `x` will be removed.
-#' \item `assay<-`: A single matrix-like object to set as the `i`-th assay. Must
-#' contain both row and column names. If is `NULL`, the original assay at index
-#' `i` will be removed.
-#' }
-#'
-#'
 #' @examples
-#' ## assays<-
+#' ## Clean all assays while keep the dimensional rules.
 #' fa <- exampleFlexAssays()
-#' aa <- assays(fa)
-#' assays(fa) <- aa
+#' fa <- cleanRawAssays(fa)
 #'
-#' @rdname FlexAssays-assays
+#' @rdname setRawAssays
 #' @export
-setMethod(
-  "assays<-", c(x = "FlexAssays", value = "list_OR_List"),
-  function(x, withDimnames = TRUE, ..., value) {
-    setRawAssays(x, NULL, check = FALSE)
-    x <- .set_assays(x, seq_along(value), value)
-    names(x) <- names(value)
-    x
+setMethod("cleanRawAssays", "SimpleFlexAssays", function(x, check = TRUE, ...) {
+  x@rowMap <- x@rowMap[, integer(), drop = FALSE]
+  x@colMap <- x@colMap[, integer(), drop = FALSE]
+  x@data <- SimpleList()
+  if (check) {
+    validObject(x)
   }
-)
-
-#' @examples
-#' fa <- exampleFlexAssays()
-#' assays(fa) <- NULL
-#'
-#' @rdname FlexAssays-assays
-#' @export
-setMethod(
-  "assays<-", c(x = "FlexAssays", value = "NULL"),
-  function(x, withDimnames = TRUE, ..., value) {
-    setRawAssays(x, value, ...)
-  }
-)
-
-#' @param i Index of the assay to access or modify.
-#'
-#' @returns
-#' \itemize{
-#' \item `assay`: Returns the matrix-like assay object at the `i`-th
-#' element.
-#' }
-#'
-#' @examples
-#' ## assay
-#' fa <- exampleFlexAssays()
-#' assay(fa, 2)
-#'
-#' @rdname FlexAssays-assays
-#' @export
-setMethod(
-  "assay", c("FlexAssays", "missing"),
-  function(x, i, withDimnames = TRUE, ...) {
-    if (0L == length(x)) {
-      stop(sprintf(
-        "assay(<%s>, i=\"missing\") failed:\n  No assay exists. ",
-        class(x)[1]
-      ))
-    }
-    .get_one_assay(x, i = 1L, withDimnames = withDimnames, ...)
-  }
-)
-
-#' @rdname FlexAssays-assays
-#' @export
-setMethod(
-  "assay", c("FlexAssays", "character"),
-  function(x, i, withDimnames = TRUE, ...) {
-    .get_one_assay(x, i = i, withDimnames = withDimnames, ...)
-  }
-)
-
-#' @rdname FlexAssays-assays
-#' @export
-setMethod(
-  "assay", c("FlexAssays", "numeric"),
-  function(x, i, withDimnames = TRUE, ...) {
-    .get_one_assay(x, i = i, withDimnames = withDimnames, ...)
-  }
-)
-
-.get_one_assay <- function(x, i, withDimnames = TRUE, ...) {
-  assay <- assays(x, withDimnames = FALSE)[[i]]
-  if (!withDimnames) {
-    return(assay)
-  }
-  resetDimNames(assay, mappedRowNames(x@rowMap, i), mappedRowNames(x@colMap, i))
-}
-
-#' @param value A single matrix-like object to set as the `i`-th assay. Must
-#' contain both row and column names. If `NULL`, the original assay at index `i`
-#' will be removed.
-#'
-#' @returns
-#' \itemize{
-#' \item `assay<-`: Returns an updated \code{\link{FlexAssays}} with the
-#' `i`-th assay replaced by `new.assay`.
-#' }
-#'
-#' @examples
-#' ## assay<-
-#' fa <- exampleFlexAssays()
-#' a <- assay(fa, 1)
-#' assay(fa, 4) <- a
-#'
-#' @rdname FlexAssays-assays
-#' @export
-setMethod(
-  "assay<-", c("FlexAssays", "missing"),
-  function(x, i, withDimnames = TRUE, ..., value) {
-    if (0L == length(x)) {
-      stop(sprintf(
-        "`assay<-`(<%s>, i=\"missing\") failed:\n  length(assays(<%s>)) is 0. ",
-        class(x)[1], class(x)[1]
-      ))
-    }
-    .set_one_assay(x, i = 1L, new.assay = value)
-  }
-)
-
-#' @rdname FlexAssays-assays
-#' @export
-setMethod(
-  "assay<-", c("FlexAssays", "numeric"),
-  function(x, i, withDimnames = TRUE, ..., value) {
-    .set_one_assay(x, i = i, new.assay = value)
-  }
-)
-
-#' @rdname FlexAssays-assays
-#' @export
-setMethod(
-  "assay<-", c("FlexAssays", "character"),
-  function(x, i, withDimnames = TRUE, ..., value) {
-    .set_one_assay(x, i = i, new.assay = value)
-  }
-)
-
-.set_assays <- function(x, which, new.assays) {
-  assays <- assays(x, withDimnames = FALSE)
-  if (is.null(new.assays)) {  # Remove some assays
-    x@rowMap <- removeMapCols(x@rowMap, which)
-    x@colMap <- removeMapCols(x@colMap, which)
-    assays[which] <- NULL
-    return(setRawAssays(x, assays, check = FALSE))
-  }
-  if (is.data.frame(new.assays)) {
-    new.assays <- list(new.assays)
-  }
-  if (!inherits(new.assays, c("list", "List"))) {
-    new.assays <- list(new.assays)
-  }
-  stopifnot(length(which) == length(new.assays))
-  for (ii in seq_along(which)) {  # Add or update selected assay
-    i <- which[ii]
-    new.assay <- new.assays[[ii]]
-    .valid_new_assay(x = x, i = i, new.assay = new.assay)
-    row.append <- x@rowFlex == "free"
-    col.append <- x@colFlex == "free"
-    mappedRowNames(x@rowMap, i, append = row.append) <- rownames(new.assay)
-    mappedRowNames(x@colMap, i, append = col.append) <- colnames(new.assay)
-    assays[[i]] <- resetDimNames(subsetMatByDimNames(
-      new.assay,
-      rownames = mappedRowNames(x@rowMap, i),
-      colnames = mappedRowNames(x@colMap, i),
-      drop = FALSE
-    ))
-  }
-  setRawAssays(x, assays, check = FALSE)
-}
-
-.set_one_assay <- function(x, i, new.assay) {
-  assays <- assays(x, withDimnames = FALSE)
-  if (is.null(new.assay)) {
-    x@rowMap <- removeMapCols(x@rowMap, i)
-    x@colMap <- removeMapCols(x@colMap, i)
-    assays[[i]] <- new.assay
-    return(setRawAssays(x, assays, check = FALSE))
-  }
-  .valid_new_assay(x = x, i = i, new.assay = new.assay)
-  row.append <- x@rowFlex == "free"
-  col.append <- x@colFlex == "free"
-  mappedRowNames(x@rowMap, i, append = row.append) <- rownames(new.assay)
-  mappedRowNames(x@colMap, i, append = col.append) <- colnames(new.assay)
-  assays[[i]] <- resetDimNames(subsetMatByDimNames(
-    new.assay,
-    rownames = mappedRowNames(x@rowMap, i),
-    colnames = mappedRowNames(x@colMap, i),
-    drop = FALSE
-  ))
-  setRawAssays(x, assays, check = FALSE)
-}
-
-.valid_new_assay <- function(x, i, new.assay) {
-  .valid_assay_classes(new.assay, x@assayClasses)
-  if (nrow(new.assay) > 0 & length(rownames(new.assay)) == 0) {
-    stop("New assay '", i, "' must have row names with non-empty rows.")
-  }
-  if (ncol(new.assay) > 0 & length(colnames(new.assay)) == 0) {
-    stop("New assay '", i, "' must have column names with non-empty columns.")
-  }
-  if (x@rowFlex == "fixed") {
-    .valid_dnames_fixed(
-      new.assay,
-      dimfun = rownames,
-      ref = rownames(x@rowMap),
-      mat.name = paste0("<assays[[", i, "]]>")
-    )
-  }
-  if (x@rowFlex == "bounded") {
-    .valid_dnames_bounded(
-      new.assay,
-      dimfun = rownames,
-      ref = rownames(x@rowMap),
-      mat.name = paste0("<assays[[", i, "]]>")
-    )
-  }
-  if (x@colFlex == "fixed") {
-    .valid_dnames_fixed(
-      new.assay,
-      dimfun = colnames,
-      ref = rownames(x@colMap),
-      mat.name = paste0("<assays[[", i, "]]>")
-    )
-  }
-  if (x@colFlex == "bounded") {
-    .valid_dnames_bounded(
-      new.assay,
-      dimfun = colnames,
-      ref = rownames(x@colMap),
-      mat.name = paste0("<assays[[", i, "]]>")
-    )
-  }
-  invisible(NULL)
-}
+  x
+})
 
 #' Clean Unmapped Dimensions for FlexAssays
 #'

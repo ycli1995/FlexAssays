@@ -50,7 +50,7 @@ to column \code{i}.}
 \item{type}{Type of row intersection to return:
 \itemize{
 \item \code{all}(the default): features shared by all columns.
-\item \code{duplicated}: features shared by at least two columns.
+\item \code{duplicated}: features shared by at least \strong{two} columns.
 }}
 
 \item{immediate.}{Logical. If \code{TRUE} (default), validation errors are thrown

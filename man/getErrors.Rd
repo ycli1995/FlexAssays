@@ -19,8 +19,6 @@ If \code{immediate.} is \code{FALSE}, returns a combined character vector of
 \code{err} and \code{e} invisibly. If \code{immediate.} is \code{TRUE}, raises an error.
 }
 \description{
-A short description...
-
 \code{getErrors()} helps accumulate error messages during validity checks
 or other internal validations. It supports returning the accumulated
 errors or stopping immediately.

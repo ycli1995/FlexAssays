@@ -26,9 +26,9 @@ a set of observations. Each row corresponds to a \code{\link{character}}
 value, stored in row names. Each column represents an observation.
 }
 \details{
-This helper is typically used internally within \code{FlexAssays} or similar
-containers to track shared or mapped features across multiple datasets or
-samples, while minimizing memory usage via sparse representation.
+This helper is typically used internally within \code{\link{FlexAssays}} or
+similar containers to track shared or mapped features across multiple
+datasets or samples, while minimizing memory usage via sparse representation.
 }
 \examples{
 # Create a sparse logical map

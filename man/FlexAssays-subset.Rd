@@ -77,6 +77,10 @@ Provides methods for extracting or subsetting elements from a
 }
 \examples{
 fa <- exampleFlexAssays()
+
+fa[[1]]
+fa[["m1"]]
+
 fa[[4]] <- fa[[1]]
 
 }
